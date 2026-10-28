@@ -22,6 +22,50 @@
     "statut": null
   },
   {
+    "titre": "Claude Code's default telemetry sends Anthropic SHA-256 hashes of files it reads",
+    "url": "https://agenticbench.org/ant-1-claude-code-telemetry.html",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "DeltaDB now has a Claude Code plugin",
+    "url": "https://delta.dev/blog/claude-code-multiplayer",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Show HN: I built Trvlrr, home for all your travels",
+    "url": "https://trvlrr.app/",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Usage Policy \\ Anthropic (version du 2026-10-28)",
+    "url": "https://www.anthropic.com/legal/aup#empreinte-effb4dccd621",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Anthropic · Usage Policy",
+    "type_veille": "reglementaire",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
     "titre": "Claude Code v2.1.312",
     "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.312",
     "publie_le": "2026-10-27",
@@ -99,6 +143,138 @@
     "statut": null
   },
   {
+    "titre": "Show HN: CleanCode – Claude Code and Codex collaborating on one canvas",
+    "url": "https://github.com/chen-985211/cleancode",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Ask HN: Any founders want to trade pitch practice and customer interviews?",
+    "url": "https://news.ycombinator.com/item?id=50265028",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Show HN: Aigent-OS, a Claude Code harness that clears and resumes",
+    "url": "https://github.com/wrg32786/aigent-os",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Show HN: Weir - Catch credential leaks in the AI agents you build and use",
+    "url": "https://github.com/IdoGol24/weir",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "AI review optimized for recall (catches more defects than Codex or Claude)",
+    "url": "https://github.com/quickchatai/quickreview",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Claude Code's Source Got Leaked. Here's What's Worth Learning",
+    "url": "https://thoughts.jock.pl/p/claude-code-source-leak-what-to-learn-ai-agents-2026",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "GitHub suspended my account, and I couldn't submit a support ticket",
+    "url": "https://news.ycombinator.com/item?id=50259246",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Show HN: SkillTotal – scan packages before Claude Code installs them",
+    "url": "https://github.com/pezhik/skilltotal",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Show HN: Imp, an LLM Server for RTX 50 GPUs, Written by Claude Code",
+    "url": "https://github.com/kekzl/imp",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Linus Torvalds let Claude Code fix the Linux page cache. Reviewers found a race",
+    "url": "https://thenewstack.io/torvalds-claude-code-kernel/",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Ramoira: Open-source brand schema for claude, codex etc",
+    "url": "https://ramoira.com",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Cindy, Open-source agent that runs Claude Code and Codex as swappable harnesses",
+    "url": "https://github.com/makecindy/cindy",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
     "titre": "Claude Code v2.1.311",
     "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.311",
     "publie_le": "2026-10-26",
@@ -115,6 +291,17 @@
     "publie_le": "2026-10-26",
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "Paradev: One workspace for Claude Code, Codex, and any coding agent",
+    "url": "https://paradev.com",
+    "publie_le": "2026-10-26",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
     "fiabilite": null,
@@ -215,6 +402,28 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "express · GHSA-qw6h-vgh9-j6wx : express vulnerable to XSS via response.redirect()",
+    "url": "https://osv.dev/vulnerability/GHSA-qw6h-vgh9-j6wx",
+    "publie_le": "2024-09-10",
+    "collecte_le": "2026-10-28",
+    "source": "Base OSV (failles connues)",
+    "type_veille": "securite",
+    "etiquettes": null,
+    "fiabilite": null,
+    "statut": null
+  },
+  {
+    "titre": "express · GHSA-rv95-896h-c2vc : Express.js Open Redirect in malformed URLs",
+    "url": "https://osv.dev/vulnerability/GHSA-rv95-896h-c2vc",
+    "publie_le": "2024-03-25",
+    "collecte_le": "2026-10-28",
+    "source": "Base OSV (failles connues)",
+    "type_veille": "securite",
     "etiquettes": null,
     "fiabilite": null,
     "statut": null
