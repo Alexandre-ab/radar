@@ -1,20 +1,87 @@
 # Plan de veille RADAR : tout ce que l'outil surveille est écrit ici, nulle part ailleurs.
 axes:      [cli-ia, securite, cgu-ia]          # 3 à 5 thèmes, au moins 3 types de veille
-mots_cles: ["claude code", "codex", "MCP", "express"]  # ce qui déclenche une capture
+# « &sujets » donne un nom à cette liste, réutilisée plus bas avec « *sujets » (règles de score).
+mots_cles: &sujets ["claude code", "codex", "MCP", "express"]  # ce qui déclenche une capture
 ignorer:   ["crypto", "NFT"]                   # ce qu'on décide de ne PAS surveiller
 sources:                                        # au moins 5, de 3 types différents
   # Pour toutes les sources :
   #   nom         = ce qui s'affiche dans le champ « source » de la fiche (obligatoire)
+  #   categorie   = officielle, institution, communaute ou social (obligatoire) ;
+  #                 deux sources de même nom doivent avoir la même categorie
   #   type_veille = technologique, concurrentielle, reglementaire ou securite
   #   limite      = nombre d'infos récupérées à chaque collecte (1 à 100, 10 par défaut)
   # releases   : depot (GitHub), produit = début du titre (« Claude Code v2.1.312 »)
   # hackernews : requete = la recherche envoyée à Hacker News
   # failles    : paquet, ecosysteme (npm, PyPI…), version (entre guillemets, facultative)
   # page       : url de la page suivie ; une fiche par nouvelle version de son texte
-  - { type: releases, depot: anthropics/claude-code, nom: "Dépôt GitHub officiel", produit: "Claude Code", limite: 10, type_veille: technologique }
-  - { type: releases, depot: openai/codex, nom: "Dépôt GitHub officiel", produit: "Codex CLI", limite: 10, type_veille: technologique }
-  - { type: hackernews, requete: "claude code", nom: "Hacker News", limite: 20, type_veille: technologique }
-  - { type: failles, paquet: express, ecosysteme: npm, version: "4.17.1", nom: "Base OSV (failles connues)", limite: 10, type_veille: securite }
-  - { type: page, url: "https://www.anthropic.com/legal/aup", nom: "Anthropic · Usage Policy", type_veille: reglementaire }
+  - { type: releases, depot: anthropics/claude-code, nom: "Dépôt GitHub officiel", categorie: officielle, produit: "Claude Code", limite: 10, type_veille: technologique }
+  - { type: releases, depot: openai/codex, nom: "Dépôt GitHub officiel", categorie: officielle, produit: "Codex CLI", limite: 10, type_veille: technologique }
+  - { type: hackernews, requete: "claude code", nom: "Hacker News", categorie: communaute, limite: 20, type_veille: technologique }
+  # OSV : base de référence des failles, tenue par l'OpenSSF, hors éditeur → institution
+  - { type: failles, paquet: express, ecosysteme: npm, version: "4.17.1", nom: "Base OSV (failles connues)", categorie: institution, limite: 10, type_veille: securite }
+  - { type: page, url: "https://www.anthropic.com/legal/aup", nom: "Anthropic · Usage Policy", categorie: officielle, type_veille: reglementaire }
 frequence: { failles: quotidien, tendances: hebdo }
 livrable:  "top 10 du lundi + alerte si faille"
+
+# Brique 3 : comment « radar score » calcule la fiabilité de chaque info.
+# Chaque règle s'appuie sur ce que contient la fiche : source, catégorie, url, titre, date.
+# Une règle donne ses points si UN de ses cas (lignes « - ») est vrai ;
+# un cas est vrai si TOUTES ses conditions le sont. Conditions possibles :
+#   sources        : la source de l'info (champ « source ») est l'une de celles-ci
+#   categories     : la catégorie de sa source est l'une de celles-ci
+#   domaines       : le domaine de l'url (« github.com » couvre aussi « www.github.com »)
+#   url_contient   : l'url contient l'un de ces textes
+#   titre_contient : le titre contient l'un de ces textes
+#   titre_sans     : le titre ne contient AUCUN de ces textes
+# Majuscules et minuscules sont confondues. « libelle » = ce qui est lu à l'oral.
+regles_score:
+  categorie: { officielle: 3, institution: 2, communaute: 1, social: 0 }
+
+  fraicheur: { libelle: "récente", jours: 183, points: 1 }      # moins de 6 mois
+
+  auteur_identifie:
+    libelle: "auteur identifié"
+    points: 1
+    si:
+      - sources: ["Dépôt GitHub officiel", "Anthropic · Usage Policy", "Base OSV (failles connues)"]
+      - domaines: ["github.com"]          # le propriétaire du dépôt est nommé dans l'url
+
+  source_ou_methode_citee:
+    libelle: "source ou méthode citée"
+    points: 1
+    si:
+      - sources: ["Base OSV (failles connues)"]   # chaque faille cite son CVE et ses références
+      - domaines: ["arxiv.org"]
+      - titre_contient: ["paper", "study", "étude", "postmortem", "analysis"]
+
+  recoupee:
+    libelle: "recoupée"
+    points: 1
+    sujets: *sujets      # un même sujet dans le titre d'une info venant d'une AUTRE source
+
+  biais_interet:
+    libelle: "biais d'intérêt"
+    points: -2
+    si:
+      - titre_contient: ["Show HN", "sponsored", "sponsorisé", "partner", "partenaire"]  # l'auteur présente son produit
+      - url_contient: ["utm_", "?ref=", "&ref=", "affiliate", "/aff/"]                 # lien affilié ou traqué
+
+  # --- Nos règles à nous : d'autres biais ---
+  effet_de_mode:
+    libelle: "effet de mode"
+    points: -1
+    si:
+      - titre_contient: ["here's what", "here's why", "game changer", "game-changer", "changes everything", "is dead", "10x", "you won't believe"]
+      - { categories: [communaute, social], titre_sans: *sujets }   # le sujet n'est que dans le texte : l'info surfe sur la tendance
+
+  contenu_genere:
+    libelle: "contenu généré par IA"
+    points: -1
+    si:
+      - titre_contient: ["written by claude", "written by ai", "generated by", "généré par", "100% ai"]
+
+  benchmark_editeur:
+    libelle: "comparatif d'éditeur"
+    points: -1
+    si:
+      - titre_contient: ["better than", "faster than", "than codex", "than claude", "outperform", "beats ", "benchmark"]

@@ -90,6 +90,7 @@ def source_releases(**modifs):
         "type": "releases",
         "depot": "anthropics/claude-code",
         "nom": "Dépôt GitHub officiel",
+        "categorie": "officielle",
         "produit": "Claude Code",
         "limite": 10,
         "type_veille": "technologique",
@@ -100,21 +101,21 @@ def source_releases(**modifs):
 
 def source_hn(**modifs):
     source = {"type": "hackernews", "requete": "claude code", "nom": "Hacker News",
-              "limite": 20, "type_veille": "technologique"}
+              "categorie": "communaute", "limite": 20, "type_veille": "technologique"}
     source.update(modifs)
     return source
 
 
 def source_failles(**modifs):
     source = {"type": "failles", "paquet": "express", "ecosysteme": "npm", "version": "4.17.1",
-              "nom": "Base OSV (failles connues)", "limite": 10, "type_veille": "securite"}
+              "nom": "Base OSV (failles connues)", "categorie": "institution", "limite": 10, "type_veille": "securite"}
     source.update(modifs)
     return source
 
 
 def source_page(**modifs):
     source = {"type": "page", "url": "https://www.anthropic.com/legal/aup",
-              "nom": "Anthropic · Usage Policy", "type_veille": "reglementaire"}
+              "nom": "Anthropic · Usage Policy", "categorie": "officielle", "type_veille": "reglementaire"}
     source.update(modifs)
     return source
 
@@ -272,6 +273,18 @@ class TestValiderSource(unittest.TestCase):
             radar.valider_source(source_releases(type_veille="tech"), "depot")
         self.assertIn("type_veille « tech » inconnu", str(erreur.exception))
 
+    def test_categorie_obligatoire_et_connue(self):
+        for valeur in (None, "", "officiel", "Officielle", 3):
+            with self.subTest(valeur=valeur):
+                with mock.patch.object(radar, "gh_api") as faux_gh:
+                    with self.assertRaises(radar.ErreurSource) as erreur:
+                        radar.collecter_releases(source_releases(categorie=valeur))
+                    faux_gh.assert_not_called()
+                self.assertIn("categorie", str(erreur.exception))
+        for valeur in radar.CATEGORIES:
+            with self.subTest(valeur=valeur):
+                self.assertEqual(radar.valider_source(source_releases(categorie=valeur), "depot"), 10)
+
     def test_type_veille_absent_autorise(self):
         source = source_releases()
         del source["type_veille"]
@@ -299,7 +312,7 @@ class TestValiderSource(unittest.TestCase):
                (source_failles, radar.collecter_failles, "http_json"),
                (source_page, radar.collecter_page, "http")]
         for fabrique, collecteur, appel_reseau in cas:
-            for modif in ({"type_veille": "tech"}, {"limite": 0}, {"nom": ""}):
+            for modif in ({"type_veille": "tech"}, {"limite": 0}, {"nom": ""}, {"categorie": "x"}):
                 with self.subTest(collecteur=collecteur.__name__, modif=modif):
                     with mock.patch.object(radar, appel_reseau) as faux_reseau:
                         with self.assertRaises(radar.ErreurSource):
@@ -703,7 +716,7 @@ class TestCommandeCollect(DossierTemporaire):
 
     def test_source_non_geree_signalee(self):
         # Changé à la passe 1 : hackernews est géré, on teste un type inconnu.
-        self.ecrire_config([source_releases(), {"type": "inconnu", "nom": "X", "requete": "claude code"}])
+        self.ecrire_config([source_releases(), {"type": "inconnu", "nom": "X", "categorie": "social", "requete": "claude code"}])
         _, sortie = self.collecter([release("v1")])
         self.assertIn("inconnu · claude code : NON COLLECTÉE", sortie)
         self.assertEqual(set(radar.COLLECTEURS), {"releases", "hackernews", "failles", "page"})

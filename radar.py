@@ -7,6 +7,8 @@ Usage (depuis le dossier radar) :
     python3 radar.py collect   partout
 
 « collect » lit radar.config.yaml et remplit data/items.json.
+« score »   calcule le champ « fiabilite » de chaque info (rubrique regles_score)
+            et affiche le top 10 (« score --top 20 » pour en voir plus).
 
 Les sources et les mots-clés viennent UNIQUEMENT de radar.config.yaml.
 """
@@ -47,6 +49,13 @@ CHAMPS_TEXTE = ("titre", "url", "publie_le", "collecte_le", "source")  # chaîne
 CHAMPS_DATE = ("publie_le", "collecte_le")                              # AAAA-MM-JJ
 # Les 4 types de veille du kit (prompt 3) ; null tant que la source ne le précise pas.
 TYPES_VEILLE = ("technologique", "concurrentielle", "reglementaire", "securite")
+# Les 4 catégories de source du kit (prompt 2). Leurs points sont dans regles_score.
+CATEGORIES = ("officielle", "institution", "communaute", "social")
+# Le schéma de regles_score : les règles du kit, obligatoires, et les conditions comprises
+# par les règles à cas (si:). Les points, délais et mots viennent tous de la config.
+REGLES_OBLIGATOIRES = ("categorie", "fraicheur", "auteur_identifie",
+                       "source_ou_methode_citee", "recoupee", "biais_interet")
+CONDITIONS = ("sources", "categories", "domaines", "url_contient", "titre_contient", "titre_sans")
 
 
 class ErreurSource(Exception):
@@ -271,8 +280,16 @@ def fiche_valide(fiche):
         return False
     if fiche["type_veille"] is not None and fiche["type_veille"] not in TYPES_VEILLE:
         return False
-    # etiquettes, fiabilite et statut restent libres (null autorisé) : remplis aux briques 3 et 4.
+    # fiabilite : null tant que « radar score » n'est pas passé, sinon un nombre entier.
+    if fiche["fiabilite"] is not None and not est_entier(fiche["fiabilite"]):
+        return False
+    # etiquettes et statut restent libres (null autorisé) : remplis à la brique 4.
     return True
+
+
+def est_entier(valeur):
+    """Vrai pour 3 ou -2, faux pour True, 2.5 ou « 3 » (en Python, True est aussi un int)."""
+    return isinstance(valeur, int) and not isinstance(valeur, bool)
 
 
 def contient_un_mot(texte, mots):
@@ -295,8 +312,11 @@ def valider_source(source, *champs):
     type_veille = source.get("type_veille")
     if type_veille is not None and type_veille not in TYPES_VEILLE:
         raise ErreurSource(f"type_veille « {type_veille} » inconnu (attendu : {', '.join(TYPES_VEILLE)})")
+    if source.get("categorie") not in CATEGORIES:
+        raise ErreurSource(f"categorie « {source.get('categorie')} » manquante ou inconnue "
+                           f"(attendu : {', '.join(CATEGORIES)})")
     limite = source.get("limite", 10)
-    if isinstance(limite, bool) or not isinstance(limite, int) or not 1 <= limite <= 100:
+    if not est_entier(limite) or not 1 <= limite <= 100:
         raise ErreurSource(f"limite « {limite} » invalide (un nombre entier entre 1 et 100)")
     return limite
 
@@ -441,6 +461,178 @@ COLLECTEURS = {
 }
 
 
+# --- Score de fiabilité (brique 3) ------------------------------------------
+# Toutes les règles, points et listes de mots viennent de « regles_score » dans la config.
+
+def est_texte(valeur):
+    return isinstance(valeur, str) and bool(valeur.strip())
+
+
+def liste_de_textes(valeur):
+    return isinstance(valeur, list) and bool(valeur) and all(est_texte(v) for v in valeur)
+
+
+def cas_de(regle):
+    """« si » accepte un seul cas (dictionnaire) ou une liste de cas."""
+    cas = regle.get("si")
+    return [cas] if isinstance(cas, dict) else cas
+
+
+def erreurs_regle(nom, regle):
+    """Liste les erreurs d'écriture d'une règle de regles_score (vide si tout va bien)."""
+    if not isinstance(regle, dict):
+        return ["doit être une rubrique « clé: valeur »"]
+    if nom == "categorie":
+        return ([f"points de « {c} » manquants ou non entiers" for c in CATEGORIES if not est_entier(regle.get(c))]
+                + [f"catégorie « {c} » inconnue" for c in regle if c not in CATEGORIES])
+
+    erreurs = []
+    if not est_entier(regle.get("points")):
+        erreurs.append("« points » doit être un nombre entier")
+    if "libelle" in regle and not est_texte(regle["libelle"]):
+        erreurs.append("« libelle » doit être un texte")
+    if nom == "fraicheur":
+        if not est_entier(regle.get("jours")) or regle["jours"] < 1:
+            erreurs.append("« jours » doit être un nombre entier positif")
+    elif nom == "recoupee":
+        if not liste_de_textes(regle.get("sujets")):
+            erreurs.append("« sujets » doit être une liste de textes")
+    else:
+        cas = cas_de(regle)
+        if not isinstance(cas, list) or not cas:
+            return erreurs + ["« si » doit contenir au moins un cas"]
+        for numero, un_cas in enumerate(cas, 1):
+            if not isinstance(un_cas, dict) or not un_cas:
+                erreurs.append(f"cas n°{numero} vide ou mal écrit")
+                continue
+            for condition, valeurs in un_cas.items():
+                if condition not in CONDITIONS:
+                    erreurs.append(f"cas n°{numero} : condition « {condition} » inconnue "
+                                   f"(possibles : {', '.join(CONDITIONS)})")
+                elif not liste_de_textes(valeurs):
+                    erreurs.append(f"cas n°{numero} : « {condition} » doit être une liste de textes")
+                elif condition == "categories" and any(v not in CATEGORIES for v in valeurs):
+                    erreurs.append(f"cas n°{numero} : « categories » n'accepte que {', '.join(CATEGORIES)}")
+    return erreurs
+
+
+def lire_regles(config):
+    """Valide regles_score et la categorie des sources ; renvoie (regles, categorie_par_source).
+
+    Toutes les erreurs sont listées d'un coup, puis la commande s'arrête.
+    """
+    erreurs, categorie_par_source = [], {}
+    for source in config.get("sources") or []:
+        nom, categorie = source.get("nom"), source.get("categorie")
+        if not est_texte(nom):
+            erreurs.append(f"une source {source.get('type')} n'a pas de « nom »")
+        elif categorie not in CATEGORIES:
+            erreurs.append(f"source « {nom} » : categorie « {categorie} » manquante ou inconnue "
+                           f"(attendu : {', '.join(CATEGORIES)})")
+        elif categorie_par_source.get(nom, categorie) != categorie:
+            erreurs.append(f"deux sources s'appellent « {nom} » mais n'ont pas la même categorie "
+                           f"({categorie_par_source[nom]} et {categorie})")
+        else:
+            categorie_par_source[nom] = categorie
+
+    regles = config.get("regles_score")
+    if not isinstance(regles, dict):
+        erreurs.append("la rubrique « regles_score » est absente")
+        regles = {}
+    erreurs += [f"la règle « {nom} » est absente de regles_score" for nom in REGLES_OBLIGATOIRES if nom not in regles]
+    for nom, regle in regles.items():
+        erreurs += [f"regles_score › {nom} : {erreur}" for erreur in erreurs_regle(nom, regle)]
+    if erreurs:
+        sys.exit(f"❌ {FICHIER_CONFIG.name} : le score ne peut pas être calculé.\n"
+                 + "\n".join(f"   - {erreur}" for erreur in erreurs))
+    return regles, categorie_par_source
+
+
+def premier_present(texte, valeurs):
+    texte = texte.lower()
+    return next((v for v in valeurs if v.lower() in texte), None)
+
+
+def condition_vraie(condition, valeurs, fiche, categorie):
+    """L'explication lisible si la condition est vraie pour cette fiche, sinon None."""
+    if condition == "sources":
+        return f"source « {fiche['source']} »" if fiche["source"] in valeurs else None
+    if condition == "categories":
+        return f"source {categorie}" if categorie in valeurs else None
+    if condition == "domaines":
+        hote = (urllib.parse.urlsplit(fiche["url"]).hostname or "").lower()
+        trouve = next((d for d in valeurs if hote == d.lower() or hote.endswith("." + d.lower())), None)
+        return f"site {trouve}" if trouve else None
+    if condition == "url_contient":
+        trouve = premier_present(fiche["url"], valeurs)
+        return f"« {trouve} » dans l'url" if trouve else None
+    if condition == "titre_contient":
+        trouve = premier_present(fiche["titre"], valeurs)
+        return f"« {trouve} » dans le titre" if trouve else None
+    if condition == "titre_sans":
+        if premier_present(fiche["titre"], valeurs) is not None:
+            return None
+        return "titre sans " + ", ".join(f"« {v} »" for v in valeurs)
+    return None
+
+
+def explication_regle(regle, fiche, categorie):
+    """Le premier cas vrai de la règle (ses conditions reliées par « et »), sinon None."""
+    for un_cas in cas_de(regle):
+        explications = [condition_vraie(c, v, fiche, categorie) for c, v in un_cas.items()]
+        if all(explications):
+            return " et ".join(explications)
+    return None
+
+
+def calculer_recoupements(items, sujets):
+    """url → noms des AUTRES sources dont un titre partage au moins un sujet avec cette info."""
+    sujets_par_url, sources_par_sujet = {}, {}
+    for item in items:
+        trouves = {s.lower() for s in sujets if s.lower() in item["titre"].lower()}
+        sujets_par_url[item["url"]] = trouves
+        for sujet in trouves:
+            sources_par_sujet.setdefault(sujet, set()).add(item["source"])
+    return {item["url"]: set().union(*(sources_par_sujet[s] for s in sujets_par_url[item["url"]]))
+            - {item["source"]} for item in items}
+
+
+def libelle_de(nom, regle):
+    return regle.get("libelle") or nom.replace("_", " ")
+
+
+def scorer(fiche, regles, categorie_par_source, recoupements, ref):
+    """Renvoie (total, raisons) ; raisons = [(points, phrase), …] dans l'ordre de la config."""
+    categorie = categorie_par_source.get(fiche["source"])
+    raisons = []
+    for nom, regle in regles.items():
+        if nom == "categorie":
+            if categorie is None:
+                raisons.append((0, "catégorie inconnue : source absente du plan de veille"))
+            else:
+                raisons.append((regle[categorie], f"source {categorie}"))
+        elif nom == "fraicheur":
+            age = (ref - date.fromisoformat(fiche["publie_le"])).days
+            if age < regle["jours"]:
+                quand = ("aujourd'hui" if age == 0 else
+                         f"il y a {age} jour" + ("s" if age > 1 else ""))
+                raisons.append((regle["points"],
+                                f"{libelle_de(nom, regle)} : publiée {quand} (moins de {regle['jours']} jours)"))
+        elif nom == "recoupee":
+            autres = recoupements.get(fiche["url"])
+            if autres:
+                raisons.append((regle["points"], f"{libelle_de(nom, regle)} par {', '.join(sorted(autres))}"))
+        else:
+            explication = explication_regle(regle, fiche, categorie)
+            if explication:
+                raisons.append((regle["points"], f"{libelle_de(nom, regle)} ({explication})"))
+    return sum(points for points, _ in raisons), raisons
+
+
+def en_points(n):
+    return f"{n} point" + ("s" if abs(n) > 1 else "")
+
+
 # --- Commandes --------------------------------------------------------------
 
 def commande_collect(args):
@@ -501,14 +693,64 @@ def commande_collect(args):
         print(f"⚠️  {len(non_collectees)} source(s) du plan non collectée(s) : {', '.join(non_collectees)}")
 
 
+def commande_score(args):
+    config = charger_config()
+    regles, categorie_par_source = lire_regles(config)
+    items = charger_items()
+    if not items:
+        print("Aucune info à noter : lancez d'abord « radar collect ».")
+        return
+
+    ref = aujourdhui()
+    recoupements = calculer_recoupements(items, regles["recoupee"]["sujets"])
+    resultats = []
+    for item in items:
+        item["fiabilite"], raisons = scorer(item, regles, categorie_par_source, recoupements, ref)
+        resultats.append((item, raisons))
+    enregistrer_items(items)
+
+    # Score décroissant, puis date de publication décroissante.
+    classement = sorted(resultats, key=lambda r: (r[0]["fiabilite"], r[0]["publie_le"]), reverse=True)
+    top = classement[:args.top]
+    print(f"🏆 Top {len(top)} sur {len(items)} infos, par fiabilité "
+          f"(règles : « regles_score » de {FICHIER_CONFIG.name})\n")
+    for rang, (item, raisons) in enumerate(top, 1):
+        print(f"{rang:2}. {en_points(item['fiabilite'])} · {item['titre']}")
+        print(f"    {item['source']} · publiée le {item['publie_le']}")
+        for points, phrase in raisons:
+            print(f"      {points:+d}  {phrase}")
+        print()
+
+    scores = [item["fiabilite"] for item in items]
+    print(f"✅ fiabilite enregistrée pour {len(items)} infos dans {FICHIER_ITEMS.relative_to(DOSSIER)} "
+          f"(de {min(scores)} à {max(scores)})")
+    inconnues = sorted({item["source"] for item in items} - set(categorie_par_source))
+    if inconnues:
+        print(f"⚠️  Sources absentes du plan (catégorie inconnue, 0 point) : {', '.join(inconnues)}")
+
+
+def entier_positif(texte):
+    try:
+        valeur = int(texte)
+    except ValueError:
+        valeur = 0
+    if valeur < 1:
+        raise argparse.ArgumentTypeError(f"« {texte} » : un nombre entier positif est attendu")
+    return valeur
+
+
 def main():
     parser = argparse.ArgumentParser(prog="radar", description="RADAR : notre outil de veille.")
     commandes = parser.add_subparsers(dest="commande", required=True)
     commandes.add_parser("collect", help="collecte les infos des sources de radar.config.yaml")
+    score = commandes.add_parser("score", help="calcule la fiabilité de chaque info (regles_score)")
+    score.add_argument("--top", type=entier_positif, default=10, help="nombre d'infos affichées (10 par défaut)")
 
     args = parser.parse_args()
     if args.commande == "collect":
         commande_collect(args)
+    elif args.commande == "score":
+        commande_score(args)
 
 
 if __name__ == "__main__":

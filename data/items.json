@@ -7,7 +7,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -18,7 +18,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -29,7 +29,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 3,
     "statut": null
   },
   {
@@ -40,7 +40,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 3,
     "statut": null
   },
   {
@@ -51,7 +51,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": -1,
     "statut": null
   },
   {
@@ -62,7 +62,7 @@
     "source": "Anthropic · Usage Policy",
     "type_veille": "reglementaire",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 5,
     "statut": null
   },
   {
@@ -73,7 +73,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -84,7 +84,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -95,7 +95,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -106,7 +106,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -117,7 +117,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -128,7 +128,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -139,7 +139,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -150,7 +150,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 2,
     "statut": null
   },
   {
@@ -161,7 +161,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 1,
     "statut": null
   },
   {
@@ -172,7 +172,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 2,
     "statut": null
   },
   {
@@ -183,7 +183,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 0,
     "statut": null
   },
   {
@@ -194,7 +194,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 3,
     "statut": null
   },
   {
@@ -205,7 +205,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 2,
     "statut": null
   },
   {
@@ -216,7 +216,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 1,
     "statut": null
   },
   {
@@ -227,7 +227,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 2,
     "statut": null
   },
   {
@@ -238,7 +238,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 1,
     "statut": null
   },
   {
@@ -249,7 +249,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 3,
     "statut": null
   },
   {
@@ -260,7 +260,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 3,
     "statut": null
   },
   {
@@ -271,7 +271,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 4,
     "statut": null
   },
   {
@@ -282,7 +282,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -293,7 +293,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -304,7 +304,7 @@
     "source": "Hacker News",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 3,
     "statut": null
   },
   {
@@ -315,7 +315,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -326,7 +326,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -337,7 +337,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -348,7 +348,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -359,7 +359,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -370,7 +370,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -381,7 +381,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -392,7 +392,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -403,7 +403,7 @@
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 6,
     "statut": null
   },
   {
@@ -414,7 +414,7 @@
     "source": "Base OSV (failles connues)",
     "type_veille": "securite",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 4,
     "statut": null
   },
   {
@@ -425,7 +425,7 @@
     "source": "Base OSV (failles connues)",
     "type_veille": "securite",
     "etiquettes": null,
-    "fiabilite": null,
+    "fiabilite": 4,
     "statut": null
   }
 ]
