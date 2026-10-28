@@ -1,7 +1,7 @@
 # Plan de veille RADAR : tout ce que l'outil surveille est écrit ici, nulle part ailleurs.
 axes:      [cli-ia, securite, cgu-ia]          # 3 à 5 thèmes, au moins 3 types de veille
 # « &sujets » donne un nom à cette liste, réutilisée plus bas avec « *sujets » (règles de score).
-mots_cles: &sujets ["claude code", "codex", "MCP", "express"]  # ce qui déclenche une capture
+mots_cles: &sujets ["claude code", "codex", "MCP", "express", "sqlite", "better-sqlite3"]  # ce qui déclenche une capture
 ignorer:   ["crypto", "NFT"]                   # ce qu'on décide de ne PAS surveiller
 sources:                                        # au moins 5, de 3 types différents
   # Pour toutes les sources :
@@ -20,6 +20,10 @@ sources:                                        # au moins 5, de 3 types différ
   # OSV : base de référence des failles, tenue par l'OpenSSF, hors éditeur → institution
   - { type: failles, paquet: express, ecosysteme: npm, version: "4.17.1", nom: "Base OSV (failles connues)", categorie: institution, limite: 10, type_veille: securite }
   - { type: page, url: "https://www.anthropic.com/legal/aup", nom: "Anthropic · Usage Policy", categorie: officielle, type_veille: reglementaire }
+  # Brique 5 (question A · la mémoire) : l'alternative SQLite
+  - { type: releases, depot: WiseLibs/better-sqlite3, nom: "Dépôt GitHub officiel", categorie: officielle, produit: "better-sqlite3", limite: 10, type_veille: technologique }
+  - { type: failles, paquet: better-sqlite3, ecosysteme: npm, nom: "Base OSV (failles connues)", categorie: institution, limite: 10, type_veille: securite }
+  - { type: hackernews, requete: "sqlite markdown", nom: "Hacker News", categorie: communaute, limite: 20, type_veille: technologique }
 frequence: { failles: quotidien, tendances: hebdo }
 livrable:  "top 10 du lundi + alerte si faille"
 
@@ -122,4 +126,84 @@ etiquettes:
       - titre_contient: ["terms of service", "usage policy", "conditions d'utilisation", "CGU"]
   data:
     si:
-      - titre_contient: ["data", "données", "telemetry", "télémétrie", "privacy", "database", "schema", "hashes"]
+      - titre_contient: ["data", "données", "telemetry", "télémétrie", "privacy", "database", "schema", "hashes",
+                         "sqlite", "better-sqlite3", "markdown"]
+
+# Brique 5 : « radar decide » compare 2 options et écrit decision.md.
+# Les poids (1 à 3) et les notes (1 à 5) sont les NÔTRES : chaque note cite son chiffre
+# et l'url de sa source, avec la date où nous l'avons consultée.
+# Une option dont la note sur un critère est ≤ « note_eliminatoire » est éliminée.
+decision:
+  question: "A · La mémoire d'Hivemind reste-t-elle en fichiers .md, ou passe-t-on à SQLite ?"
+  contexte: "Hivemind garde aujourd'hui sa mémoire dans des fichiers .md. L'alternative étudiée est une base SQLite locale, via la bibliothèque better-sqlite3."
+  besoins:              # les besoins du client, qui fixent nos poids
+    - "Hivemind reste local"
+    - "0 € d'abonnement en plus"
+    - "1 seul développeur"
+    - "prochaine livraison dans 2 sprints"
+  commits_sur_jours: 90  # fenêtre du chiffre « commits récents » relevé par gh api
+  infos_max: 15          # nombre maximum d'infos de veille citées dans decision.md
+  filtre:                # les infos de data/items.json qui touchent la question
+    si:
+      - titre_contient: ["sqlite", "markdown", "better-sqlite3", "database", "memory", "mémoire", "local-first", "context store"]
+  options:
+    fichiers_md:
+      nom: "Garder les fichiers .md (statu quo)"
+      depot: "Alexandre-ab/radar"
+      impact:
+        perimetre: "Aucun changement de code : la mémoire reste dans les fichiers .md."
+        budget: "0 € : aucune dépendance ni abonnement ajouté."
+        delais: "0 sprint : rien à migrer, les 2 sprints restent pour les fonctionnalités."
+        anticipation: "Si la mémoire grossit, prévoir un index de recherche sur les fichiers avant de changer de stockage."
+    sqlite:
+      nom: "Passer à SQLite local (better-sqlite3)"
+      depot: "WiseLibs/better-sqlite3"
+      impact:
+        perimetre: "Réécrire la couche de stockage et un script de migration des fichiers .md vers la base."
+        budget: "0 € de licence (MIT) ; le coût est le temps du seul développeur."
+        delais: "Estimation à valider : au moins 1 des 2 sprints pour la migration et ses tests."
+        anticipation: "Recherches plus rapides si la mémoire grossit ; suivre les versions de Node.js (≥ 22 exigé)."
+  criteres:
+    maturite:
+      libelle: "Maturité"
+      poids: 2
+      notes:
+        fichiers_md: { note: 3, chiffre: "Dépôt créé le 2026-10-28, 0 release GitHub ; stockage en fichiers texte sans bibliothèque", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
+        sqlite:      { note: 5, chiffre: "Créé le 2016-09-07, 130 releases, dernière v13.0.3 du 2026-08-05", source: "https://github.com/WiseLibs/better-sqlite3/releases", date: "2026-10-28" }
+    dynamisme:
+      libelle: "Dynamisme"
+      poids: 1            # peu décisif pour une livraison dans 2 sprints
+      notes:
+        fichiers_md: { note: 2, chiffre: "6 commits sur 90 jours, 1 contributeur", source: "https://github.com/Alexandre-ab/radar/commits/main", date: "2026-10-28" }
+        sqlite:      { note: 3, chiffre: "3 commits sur 90 jours, mais 69 contributeurs et 7 531 étoiles", source: "https://github.com/WiseLibs/better-sqlite3", date: "2026-10-28" }
+    licence:
+      libelle: "Licence"
+      poids: 3            # 0 € d'abonnement en plus : une licence payante ou incompatible élimine l'option
+      note_eliminatoire: 1
+      notes:
+        fichiers_md: { note: 5, chiffre: "Aucune bibliothèque tierce ajoutée ; dépôt sans licence déclarée (license: null), code de l'équipe", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
+        sqlite:      { note: 5, chiffre: "Licence MIT : usage libre et gratuit", source: "https://github.com/WiseLibs/better-sqlite3/blob/master/LICENSE", date: "2026-10-28" }
+    maintenance:
+      libelle: "Maintenance"
+      poids: 2
+      notes:
+        fichiers_md: { note: 3, chiffre: "1 seul contributeur : toute la maintenance repose sur l'équipe", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
+        sqlite:      { note: 4, chiffre: "Dernier push le 2026-08-10, 76 issues ouvertes, 0 faille connue dans la base OSV (npm)", source: "https://osv.dev/list?q=better-sqlite3&ecosystem=npm", date: "2026-10-28" }
+    cout_total:
+      libelle: "Coût total"
+      poids: 3            # 0 € en plus et 1 seul développeur
+      notes:
+        fichiers_md: { note: 5, chiffre: "0 € et 0 migration : rien à changer", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
+        sqlite:      { note: 3, chiffre: "0 € de licence, mais Node.js ≥ 22 et un module natif (node-addon-api) exigés, plus une migration à écrire", source: "https://github.com/WiseLibs/better-sqlite3/blob/master/package.json", date: "2026-10-28" }
+    apprentissage:
+      libelle: "Apprentissage"
+      poids: 3            # 1 seul développeur, livraison dans 2 sprints
+      notes:
+        fichiers_md: { note: 5, chiffre: "Rien à apprendre : lecture et écriture de fichiers texte", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
+        sqlite:      { note: 3, chiffre: "API synchrone documentée (docs/api.md), mais SQL et schéma de base à concevoir", source: "https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md", date: "2026-10-28" }
+    reversibilite:
+      libelle: "Réversibilité"
+      poids: 2
+      notes:
+        fichiers_md: { note: 5, chiffre: "Fichiers .md lisibles et versionnés dans git : aucun verrou", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
+        sqlite:      { note: 3, chiffre: "La base tient dans un fichier local, mais revenir aux .md demande un export à écrire ; module natif à recompiler (docs/compilation.md)", source: "https://github.com/WiseLibs/better-sqlite3/blob/master/docs/compilation.md", date: "2026-10-28" }

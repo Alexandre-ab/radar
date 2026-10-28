@@ -81,6 +81,60 @@
     "statut": "retenue"
   },
   {
+    "titre": "Show HN: Shufler: 3D gaming harness around your coding harness and dev pipeline",
+    "url": "https://github.com/jgrichardson/shufler",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "cli-ia"
+    ],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Claude Chalk, a mod that lets Claude Code colour its own replies",
+    "url": "https://github.com/adamkdean/claude-chalk",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
+    "fiabilite": 4,
+    "statut": "retenue"
+  },
+  {
+    "titre": "Show HN: Multi-platform remote-control for any harness",
+    "url": "https://github.com/tinybig-ai/jep",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "cli-ia"
+    ],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "I Used Claude Code to Speed Up My Shell Startup by 95%",
+    "url": "https://www.nickyt.co/blog/how-i-used-claude-code-to-speed-up-my-shell-startup-by-95percent",
+    "publie_le": "2026-10-28",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
+    "fiabilite": 3,
+    "statut": "ecartee"
+  },
+  {
     "titre": "Claude Code v2.1.312",
     "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.312",
     "publie_le": "2026-10-27",
@@ -344,6 +398,19 @@
     "statut": "retenue"
   },
   {
+    "titre": "Show HN: Markdown is 40× more token-efficient with SQLite",
+    "url": "https://www.withnative.ai/research-and-posts/markdown-context-benchmark",
+    "publie_le": "2026-10-27",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 1,
+    "statut": "ecartee"
+  },
+  {
     "titre": "Claude Code v2.1.311",
     "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.311",
     "publie_le": "2026-10-26",
@@ -413,6 +480,19 @@
     ],
     "fiabilite": 6,
     "statut": "retenue"
+  },
+  {
+    "titre": "Show HN: Mdt – save tokens reading changes to Markdown",
+    "url": "https://github.com/markdowntool/mdt",
+    "publie_le": "2026-10-23",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 0,
+    "statut": "ecartee"
   },
   {
     "titre": "Claude Code v2.1.309",
@@ -508,6 +588,341 @@
     "etiquettes": [
       "cli-ia",
       "claude-code"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "Show HN: Tennis, a local/offline context store",
+    "url": "https://tennis.jlachance1.workers.dev/",
+    "publie_le": "2026-10-16",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": -1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: An Agentic Virtual Machine",
+    "url": "https://github.com/plurnk/plurnk",
+    "publie_le": "2026-10-11",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: LLMSchema – Dump your database schema as compact Markdown for AI agents",
+    "url": "https://github.com/tordrt/LLMSchema",
+    "publie_le": "2026-10-08",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: I built a macOS Quick Look app for Markdown, SQLite, ZIP, and 300 more",
+    "url": "https://quicklookpro.com/",
+    "publie_le": "2026-09-22",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Slowave – local adaptive memory for coding agents",
+    "url": "https://github.com/slowave-ai/slowave",
+    "publie_le": "2026-09-14",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "cli-ia"
+    ],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Dbmask – Discover, mask, and verify sensitive data in SQL databases",
+    "url": "https://github.com/sealandseacat/dbmask",
+    "publie_le": "2026-09-10",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Blognami – a Markdown based blogging platform for node",
+    "url": "https://blognami.com/docs",
+    "publie_le": "2026-09-02",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": -1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: TinyJS – small apps on Win/Mac/Linux",
+    "url": "https://tinyjs.app",
+    "publie_le": "2026-09-01",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": -1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: VelocityNote – A tiny Markdown notebook with local AI",
+    "url": "https://velocitynote.app/",
+    "publie_le": "2026-08-30",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": -1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Local-first note taking web app powered by SQLite WASM – notem",
+    "url": "https://notem.pages.dev/",
+    "publie_le": "2026-08-16",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Llmem – Local persistent memory for AI coding, no embeddings",
+    "url": "https://github.com/netrixone/llmem",
+    "publie_le": "2026-08-07",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "better-sqlite3 v13.0.3",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v13.0.3",
+    "publie_le": "2026-08-05",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v13.0.2",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v13.0.2",
+    "publie_le": "2026-07-29",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "Show HN: Kedge – Full-stack cloud with forkable VM snapshots and global SQLite",
+    "url": "https://kedge.dev/",
+    "publie_le": "2026-07-29",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Launch HN: Screenpipe (YC S26) – Record how you work and turn that into agents",
+    "url": "https://news.ycombinator.com/item?id=49024620",
+    "publie_le": "2026-07-23",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": 1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Millwright – Rust-based, self-hosted LLM router",
+    "url": "https://github.com/Northwood-Systems/millwright",
+    "publie_le": "2026-07-22",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "better-sqlite3 v13.0.1",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v13.0.1",
+    "publie_le": "2026-07-21",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v13.0.0",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v13.0.0",
+    "publie_le": "2026-07-21",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "Show HN: CodeAlmanac – Karpathy-style codebase wiki from your conversations",
+    "url": "https://github.com/AlmanacCode/codealmanac/",
+    "publie_le": "2026-07-21",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": 0,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: Lific: Issue trackers should be simple, right?",
+    "url": "https://lific.dev",
+    "publie_le": "2026-07-17",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [],
+    "fiabilite": -1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "Show HN: I've built tldraw for HTML and Markdown pages (with encryption)",
+    "url": "https://pastehex.dev/",
+    "publie_le": "2026-07-16",
+    "collecte_le": "2026-10-28",
+    "source": "Hacker News",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": -1,
+    "statut": "ecartee"
+  },
+  {
+    "titre": "better-sqlite3 v12.12.0",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.12.0",
+    "publie_le": "2026-07-15",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v12.11.2",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.11.2",
+    "publie_le": "2026-07-03",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v12.11.1",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.11.1",
+    "publie_le": "2026-06-15",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v12.11.0",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.11.0",
+    "publie_le": "2026-06-14",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v12.10.1",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.10.1",
+    "publie_le": "2026-06-13",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
+    ],
+    "fiabilite": 6,
+    "statut": "retenue"
+  },
+  {
+    "titre": "better-sqlite3 v12.10.0",
+    "url": "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.10.0",
+    "publie_le": "2026-05-12",
+    "collecte_le": "2026-10-28",
+    "source": "Dépôt GitHub officiel",
+    "type_veille": "technologique",
+    "etiquettes": [
+      "data"
     ],
     "fiabilite": 6,
     "statut": "retenue"

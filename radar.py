@@ -12,6 +12,8 @@ Usage (depuis le dossier radar) :
             il pose aussi les étiquettes et le statut (retenue / ecartee).
 « search »  retrouve les infos par un mot du titre ou des étiquettes
             (« search <mot> --retenues » : seulement les retenues).
+« decide »  compare les 2 options de la rubrique decision (chiffres bruts via gh api)
+            et écrit decision.md.
 
 Les sources et les mots-clés viennent UNIQUEMENT de radar.config.yaml.
 """
@@ -24,7 +26,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
@@ -35,6 +37,7 @@ DOSSIER = Path(__file__).resolve().parent
 FICHIER_CONFIG = DOSSIER / "radar.config.yaml"
 FICHIER_ITEMS = DOSSIER / "data" / "items.json"
 FICHIER_PAGES = DOSSIER / "data" / "pages.json"  # empreintes des pages suivies (type: page)
+FICHIER_DECISION = DOSSIER / "decision.md"      # écrit par « radar decide »
 
 # Adresses des API publiques utilisées par les collecteurs (le « comment » ;
 # le « quoi » — requêtes, paquets, pages — vient de radar.config.yaml).
@@ -42,6 +45,7 @@ API_HACKERNEWS = "https://hn.algolia.com/api/v1/search_by_date"
 PAGE_HACKERNEWS = "https://news.ycombinator.com/item?id={id}"
 API_OSV = "https://api.osv.dev/v1/query"
 PAGE_OSV = "https://osv.dev/vulnerability/{id}"
+PAGE_GITHUB = "https://github.com/{depot}"
 AGENT_HTTP = "radar-veille/1.0 (outil de veille, formation)"
 DELAI_HTTP = 20  # secondes
 
@@ -62,6 +66,15 @@ CONDITIONS = ("sources", "categories", "types_veille", "domaines",
               "url_contient", "titre_contient", "titre_sans")
 # Les 2 statuts du kit (prompt 3), posés par « radar score » selon le seuil de la config.
 STATUTS = ("retenue", "ecartee")
+# Le schéma de la rubrique decision (prompt 4 et partie 5 du kit) : 2 options, les 7 critères,
+# l'échelle des poids et des notes, les rubriques d'impact. Les valeurs viennent de la config.
+NOMBRE_OPTIONS = 2
+CRITERES_KIT = ("maturite", "dynamisme", "licence", "maintenance", "cout_total", "apprentissage", "reversibilite")
+POIDS_POSSIBLES = (1, 3)
+NOTES_POSSIBLES = (1, 5)
+CHAMPS_IMPACT = (("perimetre", "Périmètre"), ("budget", "Budget"), ("delais", "Délais"),
+                 ("anticipation", "Anticipation"))
+PAR_PAGE_GH, PAGES_GH_MAX = 100, 50  # listes gh api : 100 par page, au plus 50 pages
 
 
 class ErreurSource(Exception):
@@ -134,6 +147,8 @@ def gh_api(chemin):
         raise ErreurSource("la commande « gh » n'est pas installée (https://cli.github.com)")
     except subprocess.CalledProcessError as e:
         raise ErreurSource(f"gh api a échoué : {e.stderr.strip()} (vérifiez « gh auth status »)")
+    if not resultat.stdout.strip():
+        return None  # réponse vide (HTTP 204), ex. la liste des contributeurs d'un dépôt vide
     try:
         return json.loads(resultat.stdout)
     except json.JSONDecodeError:
@@ -732,6 +747,326 @@ def decrire_archivage(item):
     return f"{statut} · {etiquettes}"
 
 
+# --- Décision (brique 5) -----------------------------------------------------
+# Options, dépôts, critères, poids, notes, chiffres et impact viennent tous de la
+# rubrique « decision » de la config ; seuls les chiffres bruts sont relevés en direct.
+
+def dans_echelle(valeur, echelle):
+    return est_entier(valeur) and echelle[0] <= valeur <= echelle[1]
+
+
+def erreurs_options(options):
+    if not isinstance(options, dict) or len(options) != NOMBRE_OPTIONS:
+        return [f"« options » doit contenir exactement {NOMBRE_OPTIONS} options"]
+    erreurs, champs_impact = [], [cle for cle, _ in CHAMPS_IMPACT]
+    for ident, option in options.items():
+        prefixe = f"options › {ident}"
+        if not isinstance(option, dict):
+            erreurs.append(f"{prefixe} : doit contenir « nom » et « depot »")
+            continue
+        if not est_texte(option.get("nom")):
+            erreurs.append(f"{prefixe} : « nom » doit être un texte")
+        if not isinstance(option.get("depot"), str) or not re.fullmatch(r"[\w.-]+/[\w.-]+", option["depot"]):
+            erreurs.append(f"{prefixe} : « depot » doit s'écrire propriétaire/nom (dépôt GitHub)")
+        impact = option.get("impact")
+        if impact is not None and not isinstance(impact, dict):
+            erreurs.append(f"{prefixe} › impact : doit contenir {', '.join(champs_impact)}")
+        for cle, texte in (impact.items() if isinstance(impact, dict) else []):
+            if cle not in champs_impact:
+                erreurs.append(f"{prefixe} › impact : « {cle} » inconnu (possibles : {', '.join(champs_impact)})")
+            elif not est_texte(texte):
+                erreurs.append(f"{prefixe} › impact › {cle} : doit être un texte")
+    return erreurs
+
+
+def erreurs_note(prefixe, note):
+    if not isinstance(note, dict):
+        return [f"{prefixe} : doit contenir note, chiffre, source et date"]
+    erreurs = []
+    if not dans_echelle(note.get("note"), NOTES_POSSIBLES):
+        erreurs.append(f"{prefixe} : « note » doit être un entier de {NOTES_POSSIBLES[0]} à {NOTES_POSSIBLES[1]}")
+    if not est_texte(note.get("chiffre")):
+        erreurs.append(f"{prefixe} : « chiffre » doit donner le chiffre réel qui justifie la note")
+    if not isinstance(note.get("source"), str) or not re.fullmatch(r"https?://\S+", note["source"]):
+        erreurs.append(f"{prefixe} : « source » doit être une url http(s)")
+    if not est_date_iso(note.get("date")) or date.fromisoformat(note["date"]) > aujourdhui():
+        erreurs.append(f'{prefixe} : « date » = jour de consultation de la source, '
+                       f'AAAA-MM-JJ entre guillemets (ex. "2026-10-28"), pas dans le futur')
+    return erreurs
+
+
+def erreurs_criteres(criteres, options):
+    if not isinstance(criteres, dict):
+        return ["« criteres » doit contenir les critères de la matrice"]
+    erreurs = [f"le critère « {nom} » du kit est absent de « criteres »" for nom in CRITERES_KIT if nom not in criteres]
+    # La matrice du kit a exactement ces 7 critères : un critère en plus fausserait les totaux.
+    erreurs += [f"critère « {nom} » inconnu (possibles : {', '.join(CRITERES_KIT)})"
+                for nom in criteres if nom not in CRITERES_KIT]
+    for nom, critere in criteres.items():
+        if nom not in CRITERES_KIT:
+            continue
+        prefixe = f"criteres › {nom}"
+        if not isinstance(critere, dict):
+            erreurs.append(f"{prefixe} : doit contenir poids et notes")
+            continue
+        if "libelle" in critere and not est_texte(critere["libelle"]):
+            erreurs.append(f"{prefixe} : « libelle » doit être un texte")
+        if not dans_echelle(critere.get("poids"), POIDS_POSSIBLES):
+            erreurs.append(f"{prefixe} : « poids » doit être un entier de {POIDS_POSSIBLES[0]} à {POIDS_POSSIBLES[1]}")
+        if "note_eliminatoire" in critere and not dans_echelle(critere["note_eliminatoire"], NOTES_POSSIBLES):
+            erreurs.append(f"{prefixe} : « note_eliminatoire » doit être une note de "
+                           f"{NOTES_POSSIBLES[0]} à {NOTES_POSSIBLES[1]}")
+        notes = critere.get("notes")
+        if not isinstance(notes, dict):
+            erreurs.append(f"{prefixe} : « notes » doit donner une note par option")
+            continue
+        erreurs += [f"{prefixe} : pas de note pour l'option « {ident} »" for ident in options if ident not in notes]
+        erreurs += [f"{prefixe} : option « {ident} » inconnue" for ident in notes if ident not in options]
+        for ident, note in notes.items():
+            if ident in options:
+                erreurs += erreurs_note(f"{prefixe} › {ident}", note)
+    return erreurs
+
+
+def lire_decision(config):
+    """Valide la rubrique decision ; toutes les erreurs sont listées d'un coup."""
+    decision = config.get("decision")
+    quoi = "la décision ne peut pas être préparée."
+    if not isinstance(decision, dict):
+        arreter(quoi, ["la rubrique « decision » est absente"])
+    erreurs = []
+    if not est_texte(decision.get("question")):
+        erreurs.append("« question » doit être un texte")
+    if "contexte" in decision and not est_texte(decision["contexte"]):
+        erreurs.append("« contexte » doit être un texte")
+    if not liste_de_textes(decision.get("besoins")):
+        erreurs.append("« besoins » doit être la liste des besoins du client")
+    if not est_entier(decision.get("commits_sur_jours")) or decision["commits_sur_jours"] < 1:
+        erreurs.append("« commits_sur_jours » doit être un nombre entier positif de jours")
+    if "infos_max" in decision and (not est_entier(decision["infos_max"]) or decision["infos_max"] < 1):
+        erreurs.append("« infos_max » doit être un nombre entier positif")
+    filtre = decision.get("filtre")
+    if not isinstance(filtre, dict):
+        erreurs.append("« filtre » doit contenir « si: » et ses cas")
+    else:
+        erreurs += [f"filtre : {erreur}" for erreur in erreurs_cas(filtre)]
+    erreurs += erreurs_options(decision.get("options"))
+    options = decision.get("options") if isinstance(decision.get("options"), dict) else {}
+    erreurs += erreurs_criteres(decision.get("criteres"), options)
+    if erreurs:
+        arreter(quoi, erreurs)
+    return decision
+
+
+def infos_de_la_question(items, decision, categorie_par_source):
+    """Les infos que le filtre de la décision retient, par fiabilité puis date décroissantes."""
+    trouvees = [item for item in items
+                if explication_regle(decision["filtre"], item, categorie_par_source.get(item["source"]))]
+    trouvees.sort(key=lambda item: (item["fiabilite"] if item["fiabilite"] is not None else float("-inf"),
+                                    item["publie_le"]), reverse=True)
+    return trouvees
+
+
+def lister_pages(chemin):
+    """Tous les éléments d'une liste gh api, page par page."""
+    elements, separateur = [], "&" if "?" in chemin else "?"
+    for page in range(1, PAGES_GH_MAX + 1):
+        lot = gh_api(f"{chemin}{separateur}per_page={PAR_PAGE_GH}&page={page}")
+        if lot is None:
+            break  # réponse vide : aucun élément
+        elements += liste_d_objets(lot, "GitHub")
+        if len(lot) < PAR_PAGE_GH:
+            break
+    return elements
+
+
+def chiffres_depot(depot, jours):
+    """Les chiffres bruts d'un dépôt GitHub, relevés en direct via gh api."""
+    infos = gh_api(f"repos/{depot}")
+    if not isinstance(infos, dict):
+        raise ErreurSource("réponse inattendue de GitHub")
+    releases = [r for r in lister_pages(f"repos/{depot}/releases") if not r.get("draft")]
+    publiees = sorted((r for r in releases if jour(r.get("published_at"))),
+                      key=lambda r: r["published_at"], reverse=True)
+    depuis = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    licence = infos.get("license")
+    return {
+        "url": infos.get("html_url") or PAGE_GITHUB.format(depot=depot),
+        "prive": bool(infos.get("private")),
+        "cree_le": jour(infos.get("created_at")),
+        "releases": len(releases),
+        "derniere_version": (publiees[0].get("tag_name"), jour(publiees[0]["published_at"])) if publiees else None,
+        "contributeurs": len(lister_pages(f"repos/{depot}/contributors?anon=1")),
+        "commits_recents": len(lister_pages(f"repos/{depot}/commits?since={depuis}")),
+        "licence": licence.get("spdx_id") if isinstance(licence, dict) else None,  # null : aucune licence
+        "etoiles": infos.get("stargazers_count"),
+        "issues_ouvertes": infos.get("open_issues_count"),
+        "dernier_push": jour(infos.get("pushed_at")),
+        "archive": bool(infos.get("archived")),
+    }
+
+
+def evaluer_options(decision):
+    """Total pondéré de chaque option, sur le maximum possible, et critères éliminatoires."""
+    criteres = decision["criteres"]
+    maximum = sum(critere["poids"] * NOTES_POSSIBLES[1] for critere in criteres.values())
+    resultats = {}
+    for ident in decision["options"]:
+        total = sum(critere["poids"] * critere["notes"][ident]["note"] for critere in criteres.values())
+        eliminee_par = [nom for nom, critere in criteres.items()
+                        if "note_eliminatoire" in critere
+                        and critere["notes"][ident]["note"] <= critere["note_eliminatoire"]]
+        resultats[ident] = {"total": total, "maximum": maximum,
+                            "pourcentage": round(100 * total / maximum), "eliminee_par": eliminee_par}
+    return resultats
+
+
+def meilleure_option(resultats):
+    """L'option non éliminée au meilleur total, ou None (égalité, ou toutes éliminées)."""
+    en_lice = {ident: r for ident, r in resultats.items() if not r["eliminee_par"]}
+    if not en_lice:
+        return None
+    meilleur = max(r["total"] for r in en_lice.values())
+    gagnantes = [ident for ident, r in en_lice.items() if r["total"] == meilleur]
+    return gagnantes[0] if len(gagnantes) == 1 else None
+
+
+def cellule(texte):
+    """Un texte sûr dans une case de tableau du fichier .md."""
+    return " ".join(str(texte).split()).replace("|", "\\|")
+
+
+def lien(texte, url):
+    return f"[{cellule(texte).replace('[', '(').replace(']', ')')}]({url})"
+
+
+def libelle_critere(nom, critere):
+    return critere.get("libelle") or nom.replace("_", " ")
+
+
+def total_lisible(resultat):
+    return f"{resultat['total']} / {resultat['maximum']} ({resultat['pourcentage']} %)"
+
+
+def conclusion(decision, resultats, gagnant):
+    options = decision["options"]
+    lignes = [f"⛔ « {options[ident]['nom']} » est éliminée : note éliminatoire en "
+              + ", ".join(libelle_critere(c, decision["criteres"][c]) for c in r["eliminee_par"])
+              for ident, r in resultats.items() if r["eliminee_par"]]
+    if gagnant:
+        autres = [r["total"] for ident, r in resultats.items() if ident != gagnant]
+        ecart = resultats[gagnant]["total"] - max(autres) if autres else 0
+        lignes.append(f"Option la mieux notée : « {options[gagnant]['nom']} », "
+                      f"{total_lisible(resultats[gagnant])}, {ecart:+d} points d'écart.")
+    elif any(not r["eliminee_par"] for r in resultats.values()):
+        lignes.append("Égalité : la matrice ne départage pas les options.")
+    else:
+        lignes.append("Aucune option ne passe les critères éliminatoires.")
+    return lignes
+
+
+def lignes_chiffres(decision, chiffres):
+    """Le tableau des chiffres bruts relevés par gh api, une colonne par option."""
+    options = decision["options"]
+    jours = decision["commits_sur_jours"]
+
+    def valeur(ident, cle):
+        c = chiffres[ident]
+        if "erreur" in c:
+            return "indisponible" if cle != "depot" else f"❌ {cellule(c['erreur'])}"
+        if cle == "depot":
+            return lien(options[ident]["depot"], c["url"]) + (" (dépôt privé)" if c["prive"] else "")
+        if cle == "derniere_version":
+            return f"{c[cle][0]} ({c[cle][1]})" if c[cle] else "aucune"
+        if cle == "licence":
+            return c[cle] or "aucune licence déclarée (license: null)"
+        if cle == "archive":
+            return "oui" if c[cle] else "non"
+        nombre = c[cle]
+        if cle in ("releases", "contributeurs", "commits_recents") and nombre >= PAR_PAGE_GH * PAGES_GH_MAX:
+            return f"au moins {nombre}"
+        return "inconnu" if nombre is None else str(nombre)
+
+    rangees = [("depot", "Dépôt"), ("cree_le", "Créé le"), ("releases", "Versions publiées (releases)"),
+               ("derniere_version", "Dernière version"), ("contributeurs", "Contributeurs"),
+               ("commits_recents", f"Commits sur {jours} jours"), ("licence", "Licence"),
+               ("etoiles", "Étoiles"), ("issues_ouvertes", "Issues ouvertes"),
+               ("dernier_push", "Dernier push"), ("archive", "Archivé")]
+    lignes = ["| Chiffre | " + " | ".join(cellule(o["nom"]) for o in options.values()) + " |",
+              "|---|" + "---|" * len(options)]
+    for cle, titre in rangees:
+        lignes.append(f"| {titre} | " + " | ".join(valeur(ident, cle) for ident in options) + " |")
+    return lignes
+
+
+def rediger_decision(decision, infos, chiffres, resultats, gagnant, ref):
+    """Le contenu de decision.md."""
+    options, criteres = decision["options"], decision["criteres"]
+    nb_max = decision.get("infos_max", len(infos))
+    md = [f"# Décision · {decision['question']}", "",
+         f"_Écrit par « radar decide » le {ref} à partir de {FICHIER_CONFIG.name} (rubrique « decision ») "
+         f"et de {FICHIER_ITEMS.relative_to(DOSSIER)} ; chiffres bruts relevés en direct avec gh api. "
+         f"Ce fichier est réécrit à chaque lancement : modifiez la config, pas ce fichier._", "",
+         "## 1. La question et le contexte", "", decision["question"], ""]
+    if decision.get("contexte"):
+        md += [decision["contexte"], ""]
+    md += ["Besoins du client (ils fixent nos poids) :", ""] + [f"- {besoin}" for besoin in decision["besoins"]] + [""]
+
+    md += ["## 2. Les options comparées", "", "| | Option | Dépôt GitHub |", "|---|---|---|"]
+    for numero, (ident, option) in enumerate(options.items(), 1):
+        md.append(f"| {numero} | {cellule(option['nom'])} | "
+                 f"{lien(option['depot'], PAGE_GITHUB.format(depot=option['depot']))} |")
+    md.append("")
+
+    retenues = sum(item["statut"] == "retenue" for item in infos)
+    md += ["## 3. Ce que dit la veille", "",
+          f"{len(infos)} info(s) de {FICHIER_ITEMS.name} touchent la question ({retenues} retenue(s))"
+          + (f", les {nb_max} plus fiables :" if len(infos) > nb_max else " :"), ""]
+    if infos:
+        md += ["| Fiabilité | Statut | Publiée le | Info | Source |", "|---|---|---|---|---|"]
+        for item in infos[:nb_max]:
+            fiabilite = item["fiabilite"] if item["fiabilite"] is not None else "non notée"
+            md.append(f"| {fiabilite} | {item['statut'] or 'à calculer'} | {item['publie_le']} | "
+                     f"{lien(item['titre'], item['url'])} | {cellule(item['source'])} |")
+    else:
+        md.append("_Aucune info collectée ne touche la question : lancez « radar collect » puis « radar score »._")
+    md.append("")
+
+    md += [f"## 4. Chiffres bruts (gh api, relevés le {ref})", ""] + lignes_chiffres(decision, chiffres) + [""]
+
+    md += [f"## 5. Matrice de décision (poids {POIDS_POSSIBLES[0]} à {POIDS_POSSIBLES[1]}, "
+          f"notes {NOTES_POSSIBLES[0]} à {NOTES_POSSIBLES[1]})", "",
+          "| Critère | Poids | " + " | ".join(cellule(o["nom"]) for o in options.values()) + " |",
+          "|---|---|" + "---|" * len(options)]
+    for nom, critere in criteres.items():
+        notes = [f"{critere['notes'][ident]['note']} / {NOTES_POSSIBLES[1]} → "
+                 f"{critere['poids'] * critere['notes'][ident]['note']}" for ident in options]
+        eliminatoire = f" (éliminatoire si ≤ {critere['note_eliminatoire']})" if "note_eliminatoire" in critere else ""
+        md.append(f"| {cellule(libelle_critere(nom, critere))}{eliminatoire} | {critere['poids']} | "
+                 + " | ".join(notes) + " |")
+    md.append(f"| **Total pondéré** | **{sum(c['poids'] for c in criteres.values())}** | "
+             + " | ".join(f"**{total_lisible(resultats[ident])}**" for ident in options) + " |")
+    md += [""] + [f"**{ligne}**" for ligne in conclusion(decision, resultats, gagnant)] + [""]
+
+    md += ["### Justification de chaque note", ""]
+    for nom, critere in criteres.items():
+        md.append(f"**{libelle_critere(nom, critere)}** (poids {critere['poids']})")
+        md.append("")
+        for ident, option in options.items():
+            note = critere["notes"][ident]
+            md.append(f"- {option['nom']} : {note['note']} / {NOTES_POSSIBLES[1]}. {note['chiffre']} "
+                     f"([source]({note['source']}), consultée le {note['date']})")
+        md.append("")
+
+    md += ["## 6. Impact", ""]
+    for ident, option in options.items():
+        impact = option.get("impact") or {}
+        md += [f"### {option['nom']}", ""]
+        md += [f"- **{titre}** : {impact.get(cle) or '_à remplir_'}" for cle, titre in CHAMPS_IMPACT]
+        md.append("")
+    return "\n".join(md)
+
+
 # --- Commandes --------------------------------------------------------------
 
 def commande_collect(args):
@@ -876,6 +1211,41 @@ def commande_search(args):
         print(f"({masquees} info(s) écartée(s) ou non notée(s) masquée(s) par --retenues)")
 
 
+def commande_decide(args):
+    config = charger_config()
+    decision = lire_decision(config)
+    categorie_par_source = {source.get("nom"): source.get("categorie") for source in config.get("sources") or []}
+    infos = infos_de_la_question(charger_items(), decision, categorie_par_source)
+    ref = aujourdhui()
+
+    chiffres = {}
+    for ident, option in decision["options"].items():
+        print(f"📡 gh api : chiffres bruts de {option['depot']}…")
+        try:
+            chiffres[ident] = chiffres_depot(option["depot"], decision["commits_sur_jours"])
+        except ErreurSource as e:
+            print(f"❌ {option['depot']} : {e}")
+            chiffres[ident] = {"erreur": str(e)}
+    resultats = evaluer_options(decision)
+    gagnant = meilleure_option(resultats)
+    FICHIER_DECISION.write_text(rediger_decision(decision, infos, chiffres, resultats, gagnant, ref), encoding="utf-8")
+
+    print(f"\n⚖️  {decision['question']}")
+    for ident, option in decision["options"].items():
+        c = chiffres[ident]
+        resume = ("chiffres indisponibles" if "erreur" in c else
+                  f"créé le {c['cree_le']}, {c['releases']} release(s), {c['contributeurs']} contributeur(s), "
+                  f"{c['commits_recents']} commit(s) sur {decision['commits_sur_jours']} j, "
+                  f"licence {c['licence'] or 'non déclarée'}")
+        print(f"   {option['nom']} : {total_lisible(resultats[ident])}")
+        print(f"      {option['depot']} · {resume}")
+    for ligne in conclusion(decision, resultats, gagnant):
+        print(f"   → {ligne}")
+    retenues = sum(item["statut"] == "retenue" for item in infos)
+    print(f"   🔎 {len(infos)} info(s) de veille touchent la question ({retenues} retenue(s))")
+    print(f"✅ {FICHIER_DECISION.name} écrit")
+
+
 def entier_positif(texte):
     try:
         valeur = int(texte)
@@ -895,6 +1265,7 @@ def main():
     search = commandes.add_parser("search", help="retrouve les infos dont le titre ou les étiquettes contiennent un mot")
     search.add_argument("mot", nargs="+", help="le ou les mots à chercher dans les titres et les étiquettes")
     search.add_argument("--retenues", action="store_true", help="seulement les infos retenues")
+    commandes.add_parser("decide", help="compare les 2 options de la rubrique decision et écrit decision.md")
 
     args = parser.parse_args()
     if args.commande == "collect":
@@ -903,6 +1274,8 @@ def main():
         commande_score(args)
     elif args.commande == "search":
         commande_search(args)
+    elif args.commande == "decide":
+        commande_decide(args)
 
 
 if __name__ == "__main__":

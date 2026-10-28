@@ -437,6 +437,19 @@ class TestRienEnDurDansRadarPy(unittest.TestCase):
         for source in config["sources"]:
             interdites |= {str(source[champ]) for champ in ("depot", "url", "paquet", "nom", "produit", "requete", "version")
                            if champ in source}
+        # Brique 5 : les valeurs de la rubrique decision (pas les noms des 7 critères du kit,
+        # qui sont le schéma, ni leurs libellés d'affichage).
+        decision = config["decision"]
+        interdites |= {decision["question"], decision.get("contexte", "")} | set(decision["besoins"]) - {""}
+        for cas in decision["filtre"]["si"]:
+            for valeurs in cas.values():
+                interdites |= set(valeurs)
+        for ident, option in decision["options"].items():
+            interdites |= {ident, option["nom"], option["depot"]} | set((option.get("impact") or {}).values())
+        for critere in decision["criteres"].values():
+            for note in critere["notes"].values():
+                interdites |= {note["chiffre"], note["source"]}
+        interdites.discard("")
         self.assertTrue(interdites)  # la config a bien été lue
         lignes = Path(radar.__file__).read_text(encoding="utf-8").splitlines()
         # Recherche stricte : sous-chaîne, majuscules et minuscules confondues.
