@@ -1,0 +1,54 @@
+#!/bin/sh
+# Fait relire le travail par Codex, en lecture seule (section « Revue » d'AGENTS.md).
+#
+# Usage :  ./revue                      revue de la dernière passation
+#          ./revue "précision en plus"  idem, avec une consigne ajoutée
+#
+# Dans revues/ : AAAA-MM-JJ-HHMM-codex.md (verdict), -tests.txt (sortie des tests), .log (détail).
+# Code de sortie : 0 = COMMIT OK, 1 = COMMIT NON, 2 = la revue n'a pas pu se faire.
+
+cd "$(dirname "$0")" || exit 2
+mkdir -p revues
+base="revues/$(date '+%Y-%m-%d-%H%M')-codex"
+
+# Photo du dépôt, pour vérifier après coup que la revue n'a rien modifié.
+etat_depot() { git status --porcelain --untracked-files=all; git diff | shasum; }
+avant=$(etat_depot)
+
+# Le bac à sable read-only de Codex interdit les dossiers temporaires dont les tests
+# ont besoin : le script lance donc les tests lui-même et Codex lit leur sortie.
+echo "🧪 Tests lancés par le script…"
+python3 -m unittest discover -s tests -v > "$base-tests.txt" 2>&1
+code_tests=$?
+tail -1 "$base-tests.txt"
+
+consigne="Fais la revue de la dernière passation écrite par un autre agent que toi, selon la section « Revue » d'AGENTS.md.
+Les tests ont déjà été lancés par ./revue hors bac à sable : ne les relance pas, lis leur sortie
+dans $base-tests.txt (code de sortie : $code_tests). $*"
+
+echo "🔎 Codex relit le travail (lecture seule, 1 à 5 min)…"
+if ! codex exec -s read-only -C "$PWD" -o "$base.md" "$consigne" > "$base.log" 2>&1; then
+    echo "❌ codex exec a échoué : voir $base.log"
+    exit 2
+fi
+if [ "$(etat_depot)" != "$avant" ]; then
+    echo "🚨 Le dépôt a changé pendant la revue : vérifiez « git status » et « git diff »."
+fi
+if [ ! -s "$base.md" ]; then
+    echo "❌ Codex n'a rendu aucun verdict : voir $base.log"
+    exit 2
+fi
+
+echo "📄 Verdict : $base.md"
+echo "------------------------------------------------------------"
+cat "$base.md"
+echo
+echo "------------------------------------------------------------"
+
+# La 1re ligne non vide doit être « VERDICT : COMMIT OK » ou « VERDICT : COMMIT NON ».
+verdict=$(grep -m1 -v '^[[:space:]]*$' "$base.md")
+case "$verdict" in
+    *"COMMIT OK"*)  echo "✅ Codex : commit possible."; exit 0 ;;
+    *"COMMIT NON"*) echo "⛔ Codex : commit déconseillé."; exit 1 ;;
+    *)              echo "⚠️  Verdict illisible (1re ligne : $verdict)"; exit 2 ;;
+esac

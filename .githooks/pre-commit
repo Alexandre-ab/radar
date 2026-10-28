@@ -1,0 +1,14 @@
+#!/bin/sh
+# Garde-fou git : avant chaque commit, les tests doivent passer, sinon le commit est refusé.
+# Activé par : git config core.hooksPath .githooks   (une fois par copie du dépôt)
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+PY=python3
+command -v python3 > /dev/null 2>&1 || PY=python   # Windows : souvent « python »
+
+echo "🧪 pre-commit : lancement des tests…"
+if ! "$PY" -m unittest discover -s tests -q; then
+    echo "❌ Des tests échouent : commit refusé. Corrigez puis recommencez le commit."
+    exit 1
+fi
+echo "✅ Tests verts, le commit continue."

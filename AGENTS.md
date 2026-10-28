@@ -56,3 +56,28 @@ avec pour titre `AAAA-MM-JJ-HHMM-<agent>-<tâche-en-3-mots>`, et ces rubriques :
 - Si une note contredit le code, le code a raison : corrigez la note.
 - Une information stable, valable pour tout le projet : proposez à l'humain de l'ajouter
   à ce fichier AGENTS.md plutôt que de la laisser en mémoire.
+
+## Revue (quand on vous demande « fais la revue »)
+
+Lancée par l'humain, ou par `./revue` (Codex en lecture seule, verdict dans `revues/`).
+
+1. Lisez la passation la plus récente de `radar/passations/` écrite par un AUTRE agent que vous
+   (l'agent est dans le titre), ou celle qu'on vous nomme, puis `radar/decisions`.
+2. Relisez : `git status`, `git diff`, `git diff --cached`, `git log -3 --oneline`,
+   et les fichiers non suivis cités par la passation.
+3. Vérifiez, sans rien modifier :
+   - syntaxe (n'écrit aucun cache) :
+     `python3 -c "import ast,sys; [ast.parse(open(f,encoding='utf-8').read(),f) for f in sys.argv[1:]]" radar.py tests/*.py`
+   - tests : `python3 -m unittest discover -s tests -v`. Lancé par `./revue` : ne les relancez pas
+     (le bac à sable read-only interdit les dossiers temporaires), lisez le fichier `revues/…-tests.txt` indiqué ;
+   - données : `python3 -m json.tool data/items.json > /dev/null`, et `git diff --stat -- data/items.json`
+     doit être vide, sauf si la passation dit qu'une collecte a été lancée ;
+   - rien en dur : aucune source ni aucun mot-clé de `radar.config.yaml` écrit dans `radar.py` ;
+   - chaque point de la rubrique « Fait » de la passation est vrai.
+4. Interdit pendant une revue : modifier un fichier du dépôt, lancer `./radar collect`, committer, pousser.
+5. Répondez dans cet ordre :
+   - **première ligne exactement** `VERDICT : COMMIT OK` ou `VERDICT : COMMIT NON` ;
+   - les problèmes, du plus grave au moins grave, avec `fichier:ligne` ;
+   - les cas que les tests ne couvrent pas ;
+   - les actions pour l'agent suivant.
+6. Écrivez votre passation, avec `revue` dans le titre.
