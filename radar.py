@@ -12,9 +12,10 @@ Les sources et les mots-clés viennent UNIQUEMENT de radar.config.yaml.
 """
 import argparse
 import json
+import re
 import subprocess
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -22,6 +23,14 @@ import yaml
 DOSSIER = Path(__file__).resolve().parent
 FICHIER_CONFIG = DOSSIER / "radar.config.yaml"
 FICHIER_ITEMS = DOSSIER / "data" / "items.json"
+
+# La fiche d'une info (partie 3 du kit) : tous ces champs sont obligatoires.
+CHAMPS_FICHE = ("titre", "url", "publie_le", "collecte_le", "source",
+                "type_veille", "etiquettes", "fiabilite", "statut")
+CHAMPS_TEXTE = ("titre", "url", "publie_le", "collecte_le", "source")  # chaînes non vides
+CHAMPS_DATE = ("publie_le", "collecte_le")                              # AAAA-MM-JJ
+# Les 4 types de veille du kit (prompt 3) ; null tant que la source ne le précise pas.
+TYPES_VEILLE = ("technologique", "concurrentielle", "reglementaire", "securite")
 
 
 class ErreurSource(Exception):
@@ -52,7 +61,7 @@ def charger_items():
 
     items, urls, invalides, doublons = [], set(), 0, 0
     for fiche in contenu:
-        if not isinstance(fiche, dict) or not fiche_valide(fiche):
+        if not fiche_valide(fiche):
             invalides += 1
         elif fiche["url"] in urls:
             doublons += 1
@@ -60,7 +69,7 @@ def charger_items():
             items.append(fiche)
             urls.add(fiche["url"])
     if invalides:
-        print(f"🧹 {invalides} fiche(s) retirée(s) de items.json : sans url ou sans date valide")
+        print(f"🧹 {invalides} fiche(s) retirée(s) de items.json : non conforme(s) à la fiche (partie 3 du kit)")
     if doublons:
         print(f"🧹 {doublons} doublon(s) retiré(s) de items.json (même url)")
     return items
@@ -83,7 +92,10 @@ def gh_api(chemin):
         raise ErreurSource("la commande « gh » n'est pas installée (https://cli.github.com)")
     except subprocess.CalledProcessError as e:
         raise ErreurSource(f"gh api a échoué : {e.stderr.strip()} (vérifiez « gh auth status »)")
-    return json.loads(resultat.stdout)
+    try:
+        return json.loads(resultat.stdout)
+    except json.JSONDecodeError:
+        raise ErreurSource("gh api a renvoyé une réponse qui n'est pas du JSON")
 
 
 def nouvelle_fiche(titre, url, publie_le, source, type_veille):
@@ -95,21 +107,46 @@ def nouvelle_fiche(titre, url, publie_le, source, type_veille):
         "collecte_le": date.today().isoformat(),
         "source": source,
         "type_veille": type_veille,  # repris de la source dans la config
-
         "etiquettes": None,   # brique 4
         "fiabilite": None,    # brique 3
         "statut": None,       # brique 4
     }
 
 
-def fiche_valide(fiche):
-    """Règle d'or : jamais d'info sans url ni date de publication (au format AAAA-MM-JJ)."""
-    if not fiche.get("url"):
+def est_date_iso(valeur):
+    """Vrai si valeur est une vraie date écrite AAAA-MM-JJ (« 2026-02-30 » est refusée)."""
+    if not isinstance(valeur, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", valeur):
         return False
     try:
-        date.fromisoformat(fiche.get("publie_le") or "")
-    except (TypeError, ValueError):
+        date.fromisoformat(valeur)
+    except ValueError:
         return False
+    return True
+
+
+def fiche_valide(fiche):
+    """Vérifie une fiche selon la partie 3 du kit.
+
+    Règle d'or : jamais d'info sans url ni date de publication.
+    """
+    if not isinstance(fiche, dict):
+        return False
+    if any(champ not in fiche for champ in CHAMPS_FICHE):
+        return False
+    if any(not isinstance(fiche[champ], str) or not fiche[champ].strip() for champ in CHAMPS_TEXTE):
+        return False
+    if not re.fullmatch(r"https?://\S+", fiche["url"]):
+        return False
+    if not all(est_date_iso(fiche[champ]) for champ in CHAMPS_DATE):
+        return False
+    # Pas d'info publiée dans le futur. GitHub donne des dates UTC : on prend le plus
+    # tardif entre « aujourd'hui » local et UTC, pour ne rien rejeter à tort selon le fuseau.
+    aujourdhui = max(date.today(), datetime.now(timezone.utc).date())
+    if date.fromisoformat(fiche["publie_le"]) > aujourdhui:
+        return False
+    if fiche["type_veille"] is not None and fiche["type_veille"] not in TYPES_VEILLE:
+        return False
+    # etiquettes, fiabilite et statut restent libres (null autorisé) : remplis aux briques 3 et 4.
     return True
 
 
@@ -129,9 +166,12 @@ def collecter_releases(source):
     depot = source.get("depot")
     if not depot:
         raise ErreurSource("champ « depot » manquant dans la config")
+    # Le nom affiché dans le champ « source » vient de la config, jamais du code.
+    nom_source = source.get("nom")
+    if not isinstance(nom_source, str) or not nom_source.strip():
+        raise ErreurSource("champ « nom » manquant dans la config : aucune fiche créée pour cette source")
     limite = source.get("limite", 10)
     produit = source.get("produit", depot)
-    nom_source = source.get("nom", f"GitHub · {depot}")
 
     fiches = []
     for release in gh_api(f"repos/{depot}/releases?per_page={limite}"):
@@ -198,7 +238,7 @@ def commande_collect(args):
 
         detail = f"{len(fiches)} lues, {nouvelles} nouvelles"
         if rejetees:
-            detail += f", {rejetees} rejetées (sans url ou sans date valide)"
+            detail += f", {rejetees} rejetées (fiche non conforme : url, dates, type_veille ou champs manquants)"
         if hors_sujet:
             detail += f", {hors_sujet} sans aucun mot-clé"
         if ignorees:
