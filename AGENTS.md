@@ -81,3 +81,19 @@ Lancée par l'humain, ou par `./revue` (Codex en lecture seule, verdict dans `re
    - les cas que les tests ne couvrent pas ;
    - les actions pour l'agent suivant.
 6. Écrivez votre passation, avec `revue` dans le titre.
+
+## Équipe (qui fait quoi)
+
+Antigravity dirige, Claude Code code, Codex teste. Le chef envoie ses consignes par Herdr :
+elles commencent par « Tâche du chef ».
+
+- **Antigravity (`agy`), le chef** : découpe le travail, donne les tâches, vérifie, rend compte
+  à l'humain. Il ne modifie aucun fichier.
+- **Claude Code, le codeur** (nom Herdr : `codeur`) : écrit le code (`radar.py`, `radar`,
+  `radar.config.yaml`, `decision.md`). Il ne modifie pas `tests/`.
+- **Codex, le testeur** (nom Herdr : `testeur`) : écrit et lance les tests, dans `tests/` uniquement.
+  Il ne corrige jamais le code de l'application : il signale le bug au chef.
+- Un seul agent modifie les fichiers à la fois.
+- Personne ne committe ni ne pousse sans l'accord de l'humain (le hook pre-commit relance les tests).
+- Quand vous répondez au chef, terminez par un bloc **RÉSUMÉ** : fichiers touchés, résultat, questions.
+- Commande de test : `python3 -m unittest discover -s tests -v`.
