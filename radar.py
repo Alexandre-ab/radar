@@ -8,7 +8,10 @@ Usage (depuis le dossier radar) :
 
 « collect » lit radar.config.yaml et remplit data/items.json.
 « score »   calcule le champ « fiabilite » de chaque info (rubrique regles_score)
-            et affiche le top 10 (« score --top 20 » pour en voir plus).
+            et affiche le top 10 (« score --top 20 » pour en voir plus) ;
+            il pose aussi les étiquettes et le statut (retenue / ecartee).
+« search »  retrouve les infos par un mot du titre ou des étiquettes
+            (« search <mot> --retenues » : seulement les retenues).
 
 Les sources et les mots-clés viennent UNIQUEMENT de radar.config.yaml.
 """
@@ -55,7 +58,10 @@ CATEGORIES = ("officielle", "institution", "communaute", "social")
 # par les règles à cas (si:). Les points, délais et mots viennent tous de la config.
 REGLES_OBLIGATOIRES = ("categorie", "fraicheur", "auteur_identifie",
                        "source_ou_methode_citee", "recoupee", "biais_interet")
-CONDITIONS = ("sources", "categories", "domaines", "url_contient", "titre_contient", "titre_sans")
+CONDITIONS = ("sources", "categories", "types_veille", "domaines",
+              "url_contient", "titre_contient", "titre_sans")
+# Les 2 statuts du kit (prompt 3), posés par « radar score » selon le seuil de la config.
+STATUTS = ("retenue", "ecartee")
 
 
 class ErreurSource(Exception):
@@ -283,7 +289,14 @@ def fiche_valide(fiche):
     # fiabilite : null tant que « radar score » n'est pas passé, sinon un nombre entier.
     if fiche["fiabilite"] is not None and not est_entier(fiche["fiabilite"]):
         return False
-    # etiquettes et statut restent libres (null autorisé) : remplis à la brique 4.
+    # etiquettes : null avant « radar collect / score », sinon une liste de textes (vide possible).
+    etiquettes = fiche["etiquettes"]
+    if etiquettes is not None and (not isinstance(etiquettes, list)
+                                   or not all(isinstance(e, str) and e.strip() for e in etiquettes)):
+        return False
+    # statut : null avant « radar score », sinon retenue ou ecartee.
+    if fiche["statut"] is not None and fiche["statut"] not in STATUTS:
+        return False
     return True
 
 
@@ -310,8 +323,8 @@ def valider_source(source, *champs):
         if not isinstance(valeur, str) or not valeur.strip():
             raise ErreurSource(f"champ « {champ} » manquant dans la config : aucune fiche créée pour cette source")
     type_veille = source.get("type_veille")
-    if type_veille is not None and type_veille not in TYPES_VEILLE:
-        raise ErreurSource(f"type_veille « {type_veille} » inconnu (attendu : {', '.join(TYPES_VEILLE)})")
+    if type_veille not in TYPES_VEILLE:
+        raise ErreurSource(f"type_veille « {type_veille} » manquant ou inconnu (attendu : {', '.join(TYPES_VEILLE)})")
     if source.get("categorie") not in CATEGORIES:
         raise ErreurSource(f"categorie « {source.get('categorie')} » manquante ou inconnue "
                            f"(attendu : {', '.join(CATEGORIES)})")
@@ -354,15 +367,15 @@ def collecter_releases(source):
 
 
 def collecter_hackernews(source):
-    """Les derniers articles Hacker News d'une recherche (type: hackernews, API Algolia)."""
+    """Les derniers articles d'une recherche (type: hackernews, via l'API Algolia)."""
     limite = valider_source(source, "requete")
     parametres = urllib.parse.urlencode({"query": source["requete"], "tags": "story", "hitsPerPage": limite})
     reponse = http_json(f"{API_HACKERNEWS}?{parametres}")
     if not isinstance(reponse, dict):
-        raise ErreurSource("réponse inattendue de Hacker News")
+        raise ErreurSource("réponse inattendue de l'API Algolia")
 
     fiches = []
-    for article in liste_d_objets(reponse.get("hits"), "Hacker News"):
+    for article in liste_d_objets(reponse.get("hits"), "l'API Algolia"):
         url = article.get("url")
         if not url and article.get("objectID"):
             url = PAGE_HACKERNEWS.format(id=article["objectID"])  # « Ask HN » : pas de lien externe
@@ -498,21 +511,30 @@ def erreurs_regle(nom, regle):
         if not liste_de_textes(regle.get("sujets")):
             erreurs.append("« sujets » doit être une liste de textes")
     else:
-        cas = cas_de(regle)
-        if not isinstance(cas, list) or not cas:
-            return erreurs + ["« si » doit contenir au moins un cas"]
-        for numero, un_cas in enumerate(cas, 1):
-            if not isinstance(un_cas, dict) or not un_cas:
-                erreurs.append(f"cas n°{numero} vide ou mal écrit")
-                continue
-            for condition, valeurs in un_cas.items():
-                if condition not in CONDITIONS:
-                    erreurs.append(f"cas n°{numero} : condition « {condition} » inconnue "
-                                   f"(possibles : {', '.join(CONDITIONS)})")
-                elif not liste_de_textes(valeurs):
-                    erreurs.append(f"cas n°{numero} : « {condition} » doit être une liste de textes")
-                elif condition == "categories" and any(v not in CATEGORIES for v in valeurs):
-                    erreurs.append(f"cas n°{numero} : « categories » n'accepte que {', '.join(CATEGORIES)}")
+        erreurs += erreurs_cas(regle)
+    return erreurs
+
+
+def erreurs_cas(regle):
+    """Vérifie le « si » d'une règle ou d'une étiquette : au moins un cas, conditions connues."""
+    cas = cas_de(regle)
+    if not isinstance(cas, list) or not cas:
+        return ["« si » doit contenir au moins un cas"]
+    erreurs = []
+    for numero, un_cas in enumerate(cas, 1):
+        if not isinstance(un_cas, dict) or not un_cas:
+            erreurs.append(f"cas n°{numero} vide ou mal écrit")
+            continue
+        for condition, valeurs in un_cas.items():
+            if condition not in CONDITIONS:
+                erreurs.append(f"cas n°{numero} : condition « {condition} » inconnue "
+                               f"(possibles : {', '.join(CONDITIONS)})")
+            elif not liste_de_textes(valeurs):
+                erreurs.append(f"cas n°{numero} : « {condition} » doit être une liste de textes")
+            elif condition == "categories" and any(v not in CATEGORIES for v in valeurs):
+                erreurs.append(f"cas n°{numero} : « categories » n'accepte que {', '.join(CATEGORIES)}")
+            elif condition == "types_veille" and any(v not in TYPES_VEILLE for v in valeurs):
+                erreurs.append(f"cas n°{numero} : « types_veille » n'accepte que {', '.join(TYPES_VEILLE)}")
     return erreurs
 
 
@@ -559,6 +581,8 @@ def condition_vraie(condition, valeurs, fiche, categorie):
         return f"source « {fiche['source']} »" if fiche["source"] in valeurs else None
     if condition == "categories":
         return f"source {categorie}" if categorie in valeurs else None
+    if condition == "types_veille":
+        return f"veille {fiche['type_veille']}" if fiche["type_veille"] in valeurs else None
     if condition == "domaines":
         hote = (urllib.parse.urlsplit(fiche["url"]).hostname or "").lower()
         trouve = next((d for d in valeurs if hote == d.lower() or hote.endswith("." + d.lower())), None)
@@ -633,6 +657,81 @@ def en_points(n):
     return f"{n} point" + ("s" if abs(n) > 1 else "")
 
 
+# --- Archive : étiquettes et statut (brique 4) ------------------------------
+# Les étiquettes possibles, leurs conditions et le seuil viennent tous de la config.
+
+def erreurs_etiquettes(config):
+    """Renvoie (etiquettes, erreurs) ; etiquettes = {nom: {si: …}} dans l'ordre de la config."""
+    etiquettes = config.get("etiquettes")
+    if not isinstance(etiquettes, dict) or not etiquettes:
+        return {}, ["la rubrique « etiquettes » est absente ou vide"]
+    erreurs = []
+    for nom, etiquette in etiquettes.items():
+        if not est_texte(nom):
+            erreurs.append(f"etiquettes : le nom « {nom} » doit être un texte")
+        elif not isinstance(etiquette, dict):
+            erreurs.append(f"etiquettes › {nom} : doit contenir « si: » et ses cas")
+        else:
+            erreurs += [f"etiquettes › {nom} : {erreur}" for erreur in erreurs_cas(etiquette)]
+    return etiquettes, erreurs
+
+
+def arreter(quoi, erreurs):
+    sys.exit(f"❌ {FICHIER_CONFIG.name} : {quoi}\n" + "\n".join(f"   - {erreur}" for erreur in erreurs))
+
+
+def lire_etiquettes(config):
+    etiquettes, erreurs = erreurs_etiquettes(config)
+    if erreurs:
+        arreter("les étiquettes ne peuvent pas être posées.", erreurs)
+    return etiquettes
+
+
+def lire_archivage(config):
+    """Valide seuil, etiquettes et le type_veille des sources.
+
+    Renvoie (seuil, etiquettes, type_veille_par_source) ; deux sources de même nom
+    doivent avoir le même type_veille, puisque la fiche ne garde que le nom.
+    """
+    etiquettes, erreurs = erreurs_etiquettes(config)
+    seuil = config.get("seuil")
+    if not est_entier(seuil):
+        erreurs.append("« seuil » doit être un nombre entier (ex. seuil: 4)")
+    type_veille_par_source = {}
+    for source in config.get("sources") or []:
+        nom, type_veille = source.get("nom"), source.get("type_veille")
+        if not est_texte(nom):
+            continue  # déjà signalé par lire_regles
+        if type_veille not in TYPES_VEILLE:
+            erreurs.append(f"source « {nom} » : type_veille « {type_veille} » manquant ou inconnu "
+                           f"(attendu : {', '.join(TYPES_VEILLE)})")
+        elif type_veille_par_source.get(nom, type_veille) != type_veille:
+            erreurs.append(f"deux sources s'appellent « {nom} » mais n'ont pas le même type_veille "
+                           f"({type_veille_par_source[nom]} et {type_veille})")
+        else:
+            type_veille_par_source[nom] = type_veille
+    if erreurs:
+        arreter("l'archivage (étiquettes, statut) est impossible.", erreurs)
+    return seuil, etiquettes, type_veille_par_source
+
+
+def attribuer_etiquettes(fiche, etiquettes, categorie):
+    """Les étiquettes de la config dont un cas est vrai pour cette fiche (ordre de la config)."""
+    return [nom for nom, etiquette in etiquettes.items() if explication_regle(etiquette, fiche, categorie)]
+
+
+def decrire_archivage(item):
+    """« <statut> · étiquettes : <étiquette>, <étiquette> », lisible même avant « radar score »."""
+    statut = item["statut"] or "statut à calculer (radar score)"
+    if item["etiquettes"] is None:
+        etiquettes = "étiquettes à calculer"
+    elif item["etiquettes"]:
+        etiquettes = "étiquettes : " + ", ".join(item["etiquettes"])
+    else:
+        etiquettes = "aucune étiquette"
+    return f"{statut} · {etiquettes}"
+
+
 # --- Commandes --------------------------------------------------------------
 
 def commande_collect(args):
@@ -641,6 +740,7 @@ def commande_collect(args):
     ignorer = config.get("ignorer") or []
     if not mots_cles:
         sys.exit("❌ La liste « mots_cles » de radar.config.yaml est vide : rien ne déclencherait de capture.")
+    etiquettes = lire_etiquettes(config)
     items = charger_items()
     urls_connues = {item["url"] for item in items}
     total_nouvelles = 0
@@ -672,6 +772,7 @@ def commande_collect(args):
             elif contient_un_mot(contenu, ignorer):
                 ignorees += 1
             elif fiche["url"] not in urls_connues:
+                fiche["etiquettes"] = attribuer_etiquettes(fiche, etiquettes, source.get("categorie"))
                 items.append(fiche)
                 urls_connues.add(fiche["url"])
                 nouvelles += 1
@@ -696,6 +797,7 @@ def commande_collect(args):
 def commande_score(args):
     config = charger_config()
     regles, categorie_par_source = lire_regles(config)
+    seuil, etiquettes, type_veille_par_source = lire_archivage(config)
     items = charger_items()
     if not items:
         print("Aucune info à noter : lancez d'abord « radar collect ».")
@@ -705,7 +807,11 @@ def commande_score(args):
     recoupements = calculer_recoupements(items, regles["recoupee"]["sujets"])
     resultats = []
     for item in items:
+        # type_veille et étiquettes sont recalculés d'après la config actuelle (brique 4).
+        item["type_veille"] = type_veille_par_source.get(item["source"], item["type_veille"])
         item["fiabilite"], raisons = scorer(item, regles, categorie_par_source, recoupements, ref)
+        item["etiquettes"] = attribuer_etiquettes(item, etiquettes, categorie_par_source.get(item["source"]))
+        item["statut"] = "retenue" if item["fiabilite"] >= seuil else "ecartee"
         resultats.append((item, raisons))
     enregistrer_items(items)
 
@@ -717,16 +823,57 @@ def commande_score(args):
     for rang, (item, raisons) in enumerate(top, 1):
         print(f"{rang:2}. {en_points(item['fiabilite'])} · {item['titre']}")
         print(f"    {item['source']} · publiée le {item['publie_le']}")
+        print(f"    {decrire_archivage(item)}")
         for points, phrase in raisons:
             print(f"      {points:+d}  {phrase}")
         print()
 
     scores = [item["fiabilite"] for item in items]
+    retenues = sum(item["statut"] == "retenue" for item in items)
     print(f"✅ fiabilite enregistrée pour {len(items)} infos dans {FICHIER_ITEMS.relative_to(DOSSIER)} "
           f"(de {min(scores)} à {max(scores)})")
+    print(f"✅ étiquettes et statut posés : {retenues} retenues, {len(items) - retenues} écartées "
+          f"(seuil : {seuil})")
+    incompletes = [item["titre"] for item in items if any(item[champ] is None for champ in CHAMPS_FICHE)]
+    if incompletes:
+        print(f"⚠️  {len(incompletes)} info(s) gardent un champ vide (null), ex. : {incompletes[0]}")
     inconnues = sorted({item["source"] for item in items} - set(categorie_par_source))
     if inconnues:
         print(f"⚠️  Sources absentes du plan (catégorie inconnue, 0 point) : {', '.join(inconnues)}")
+
+
+def commande_search(args):
+    """Retrouve les infos dont le titre ou une étiquette contient le mot (sans écrire)."""
+    mot = " ".join(args.mot).strip()
+    if not mot:
+        sys.exit("❌ Donnez un mot à chercher, ex. : radar search <mot>")
+    items = charger_items()
+    cherche = mot.lower()
+    trouvees = [item for item in items
+                if cherche in item["titre"].lower()
+                or any(cherche in etiquette.lower() for etiquette in item["etiquettes"] or [])]
+    masquees = 0
+    if args.retenues:
+        masquees = sum(item["statut"] != "retenue" for item in trouvees)
+        trouvees = [item for item in trouvees if item["statut"] == "retenue"]
+    # Score décroissant (non noté = en dernier), puis date de publication décroissante.
+    trouvees.sort(key=lambda item: (item["fiabilite"] if item["fiabilite"] is not None else float("-inf"),
+                                    item["publie_le"]), reverse=True)
+
+    filtre = ", retenues seulement" if args.retenues else ""
+    if not trouvees:
+        print(f"Aucune info ne contient « {mot} » dans son titre ou ses étiquettes{filtre}.")
+    else:
+        print(f"🔎 {len(trouvees)} info(s) contiennent « {mot} » (titre ou étiquettes{filtre})\n")
+    for rang, item in enumerate(trouvees, 1):
+        score = en_points(item["fiabilite"]) if item["fiabilite"] is not None else "pas encore notée"
+        print(f"{rang:2}. {item['titre']}")
+        print(f"    {score} · {decrire_archivage(item)}")
+        print(f"    {item['source']} · publiée le {item['publie_le']}")
+        print(f"    {item['url']}")
+        print()
+    if masquees:
+        print(f"({masquees} info(s) écartée(s) ou non notée(s) masquée(s) par --retenues)")
 
 
 def entier_positif(texte):
@@ -745,12 +892,17 @@ def main():
     commandes.add_parser("collect", help="collecte les infos des sources de radar.config.yaml")
     score = commandes.add_parser("score", help="calcule la fiabilité de chaque info (regles_score)")
     score.add_argument("--top", type=entier_positif, default=10, help="nombre d'infos affichées (10 par défaut)")
+    search = commandes.add_parser("search", help="retrouve les infos dont le titre ou les étiquettes contiennent un mot")
+    search.add_argument("mot", nargs="+", help="le ou les mots à chercher dans les titres et les étiquettes")
+    search.add_argument("--retenues", action="store_true", help="seulement les infos retenues")
 
     args = parser.parse_args()
     if args.commande == "collect":
         commande_collect(args)
     elif args.commande == "score":
         commande_score(args)
+    elif args.commande == "search":
+        commande_search(args)
 
 
 if __name__ == "__main__":

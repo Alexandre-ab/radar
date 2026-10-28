@@ -6,9 +6,9 @@ ignorer:   ["crypto", "NFT"]                   # ce qu'on décide de ne PAS surv
 sources:                                        # au moins 5, de 3 types différents
   # Pour toutes les sources :
   #   nom         = ce qui s'affiche dans le champ « source » de la fiche (obligatoire)
-  #   categorie   = officielle, institution, communaute ou social (obligatoire) ;
-  #                 deux sources de même nom doivent avoir la même categorie
-  #   type_veille = technologique, concurrentielle, reglementaire ou securite
+  #   categorie   = officielle, institution, communaute ou social (obligatoire)
+  #   type_veille = technologique, concurrentielle, reglementaire ou securite (obligatoire)
+  #                 deux sources de même nom doivent avoir la même categorie et le même type_veille
   #   limite      = nombre d'infos récupérées à chaque collecte (1 à 100, 10 par défaut)
   # releases   : depot (GitHub), produit = début du titre (« Claude Code v2.1.312 »)
   # hackernews : requete = la recherche envoyée à Hacker News
@@ -85,3 +85,41 @@ regles_score:
     points: -1
     si:
       - titre_contient: ["better than", "faster than", "than codex", "than claude", "outperform", "beats ", "benchmark"]
+
+  version_de_test:
+    libelle: "version de test"
+    points: -1
+    si:
+      - titre_contient: ["alpha", "beta", "-rc"]   # pré-versions : on préfère les versions stables
+
+# Brique 4 : « radar score » marque « retenue » une info dont la fiabilité atteint ce seuil,
+# sinon « ecartee ».
+seuil: 4
+
+# Brique 4 : les étiquettes que « radar collect » et « radar score » peuvent poser sur une info.
+# Seules celles-ci existent. Une étiquette est posée si UN de ses cas est vrai ; mêmes
+# conditions que dans regles_score, plus « types_veille » (le type de veille de l'info).
+etiquettes:
+  cli-ia:
+    si:
+      - titre_contient: ["claude code", "codex", "coding agent", "harness", "cli "]
+  claude-code:
+    si:
+      - titre_contient: ["claude code"]
+  codex:
+    si:
+      - titre_contient: ["codex"]
+  mcp:
+    si:
+      - titre_contient: ["MCP", "model context protocol"]
+  securite:
+    si:
+      - types_veille: [securite]
+      - titre_contient: ["vulnerab", "faille", "security", "sécurité", "credential", "leak", "XSS", "CVE"]
+  cgu-ia:
+    si:
+      - types_veille: [reglementaire]
+      - titre_contient: ["terms of service", "usage policy", "conditions d'utilisation", "CGU"]
+  data:
+    si:
+      - titre_contient: ["data", "données", "telemetry", "télémétrie", "privacy", "database", "schema", "hashes"]

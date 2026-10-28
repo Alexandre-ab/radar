@@ -44,11 +44,11 @@ def tearDownModule():
 
 
 SOURCES = [
-    {"type": "releases", "depot": "anthropics/claude-code", "nom": "Dépôt GitHub officiel", "categorie": "officielle"},
-    {"type": "releases", "depot": "openai/codex", "nom": "Dépôt GitHub officiel", "categorie": "officielle"},
-    {"type": "hackernews", "requete": "claude code", "nom": "Hacker News", "categorie": "communaute"},
-    {"type": "failles", "paquet": "express", "ecosysteme": "npm", "nom": "Base OSV", "categorie": "institution"},
-    {"type": "page", "url": "https://exemple.org/cgu", "nom": "Forum", "categorie": "social"},
+    {"type": "releases", "depot": "anthropics/claude-code", "nom": "Dépôt GitHub officiel", "categorie": "officielle", "type_veille": "technologique"},
+    {"type": "releases", "depot": "openai/codex", "nom": "Dépôt GitHub officiel", "categorie": "officielle", "type_veille": "technologique"},
+    {"type": "hackernews", "requete": "claude code", "nom": "Hacker News", "categorie": "communaute", "type_veille": "technologique"},
+    {"type": "failles", "paquet": "express", "ecosysteme": "npm", "nom": "Base OSV", "categorie": "institution", "type_veille": "securite"},
+    {"type": "page", "url": "https://exemple.org/cgu", "nom": "Forum", "categorie": "social", "type_veille": "reglementaire"},
 ]
 
 REGLES = {
@@ -68,7 +68,8 @@ REGLES = {
 
 
 def config_ok(**modifs):
-    config = {"mots_cles": SUJETS, "sources": copy.deepcopy(SOURCES), "regles_score": copy.deepcopy(REGLES)}
+    config = {"mots_cles": SUJETS, "sources": copy.deepcopy(SOURCES), "regles_score": copy.deepcopy(REGLES),
+              "seuil": 4, "etiquettes": {"claude-code": {"si": [{"titre_contient": ["claude code"]}]}}}
     config.update(modifs)
     return config
 
@@ -402,10 +403,16 @@ class TestCommandeScore(unittest.TestCase):
         self.lancer()
         items = self.lire_items()
         self.assertEqual([i["fiabilite"] for i in items], [-1, 6, 6, 3, 4])
+        # Passe 3 : score pose aussi etiquettes et statut (et recale type_veille sur la source).
+        remplis = {"fiabilite", "etiquettes", "statut", "type_veille"}
         for avant, apres in zip(self.ITEMS, items):
-            self.assertEqual({k: v for k, v in apres.items() if k != "fiabilite"},
-                             {k: v for k, v in avant.items() if k != "fiabilite"})
+            self.assertEqual({k: v for k, v in apres.items() if k not in remplis},
+                             {k: v for k, v in avant.items() if k not in remplis})
             self.assertTrue(radar.fiche_valide(apres))
+        self.assertEqual([i["statut"] for i in items], ["ecartee", "retenue", "retenue", "ecartee", "retenue"])
+        self.assertEqual([i["etiquettes"] for i in items], [[], ["claude-code"], ["claude-code"], ["claude-code"], []])
+        self.assertEqual([i["type_veille"] for i in items],
+                         ["technologique", "technologique", "technologique", "technologique", "securite"])
 
     def test_top_trie_par_score_puis_date(self):
         self.ecrire_items(self.ITEMS)

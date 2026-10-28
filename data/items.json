@@ -6,9 +6,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.166.0-alpha.4",
@@ -17,9 +20,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code's default telemetry sends Anthropic SHA-256 hashes of files it reads",
@@ -28,9 +34,13 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code",
+      "data"
+    ],
     "fiabilite": 3,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "DeltaDB now has a Claude Code plugin",
@@ -39,9 +49,12 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 3,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Show HN: I built Trvlrr, home for all your travels",
@@ -50,9 +63,9 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [],
     "fiabilite": -1,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Usage Policy \\ Anthropic (version du 2026-10-28)",
@@ -61,9 +74,11 @@
     "collecte_le": "2026-10-28",
     "source": "Anthropic · Usage Policy",
     "type_veille": "reglementaire",
-    "etiquettes": null,
+    "etiquettes": [
+      "cgu-ia"
+    ],
     "fiabilite": 5,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.312",
@@ -72,9 +87,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.165.0",
@@ -83,9 +101,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.166.0-alpha.3",
@@ -94,9 +115,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.166.0-alpha.2",
@@ -105,9 +129,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.166.0-alpha.1",
@@ -116,9 +143,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.165.0-alpha.1.2",
@@ -127,9 +157,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.165.0-alpha.1.1",
@@ -138,9 +171,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Show HN: CleanCode – Claude Code and Codex collaborating on one canvas",
@@ -149,9 +185,13 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code",
+      "codex"
+    ],
     "fiabilite": 2,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Ask HN: Any founders want to trade pitch practice and customer interviews?",
@@ -160,9 +200,9 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [],
     "fiabilite": 1,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Show HN: Aigent-OS, a Claude Code harness that clears and resumes",
@@ -171,9 +211,12 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 2,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Show HN: Weir - Catch credential leaks in the AI agents you build and use",
@@ -182,9 +225,11 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "securite"
+    ],
     "fiabilite": 0,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "AI review optimized for recall (catches more defects than Codex or Claude)",
@@ -193,9 +238,12 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
     "fiabilite": 3,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Claude Code's Source Got Leaked. Here's What's Worth Learning",
@@ -204,9 +252,13 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code",
+      "securite"
+    ],
     "fiabilite": 2,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "GitHub suspended my account, and I couldn't submit a support ticket",
@@ -215,9 +267,9 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [],
     "fiabilite": 1,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Show HN: SkillTotal – scan packages before Claude Code installs them",
@@ -226,9 +278,12 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 2,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Show HN: Imp, an LLM Server for RTX 50 GPUs, Written by Claude Code",
@@ -237,9 +292,12 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 1,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Linus Torvalds let Claude Code fix the Linux page cache. Reviewers found a race",
@@ -248,9 +306,12 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 3,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Ramoira: Open-source brand schema for claude, codex etc",
@@ -259,9 +320,13 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "codex",
+      "data"
+    ],
     "fiabilite": 3,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Cindy, Open-source agent that runs Claude Code and Codex as swappable harnesses",
@@ -270,9 +335,13 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code",
+      "codex"
+    ],
     "fiabilite": 4,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.311",
@@ -281,9 +350,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.165.0-alpha.3",
@@ -292,9 +364,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
-    "fiabilite": 6,
-    "statut": null
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
+    "fiabilite": 5,
+    "statut": "retenue"
   },
   {
     "titre": "Paradev: One workspace for Claude Code, Codex, and any coding agent",
@@ -303,9 +378,13 @@
     "collecte_le": "2026-10-28",
     "source": "Hacker News",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code",
+      "codex"
+    ],
     "fiabilite": 3,
-    "statut": null
+    "statut": "ecartee"
   },
   {
     "titre": "Claude Code v2.1.310",
@@ -314,9 +393,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Codex CLI rust-v0.164.0",
@@ -325,9 +407,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "codex"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.309",
@@ -336,9 +421,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.308",
@@ -347,9 +435,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.307",
@@ -358,9 +449,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.306",
@@ -369,9 +463,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.305",
@@ -380,9 +477,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.304",
@@ -391,9 +491,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "Claude Code v2.1.303",
@@ -402,9 +505,12 @@
     "collecte_le": "2026-10-28",
     "source": "Dépôt GitHub officiel",
     "type_veille": "technologique",
-    "etiquettes": null,
+    "etiquettes": [
+      "cli-ia",
+      "claude-code"
+    ],
     "fiabilite": 6,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "express · GHSA-qw6h-vgh9-j6wx : express vulnerable to XSS via response.redirect()",
@@ -413,9 +519,11 @@
     "collecte_le": "2026-10-28",
     "source": "Base OSV (failles connues)",
     "type_veille": "securite",
-    "etiquettes": null,
+    "etiquettes": [
+      "securite"
+    ],
     "fiabilite": 4,
-    "statut": null
+    "statut": "retenue"
   },
   {
     "titre": "express · GHSA-rv95-896h-c2vc : Express.js Open Redirect in malformed URLs",
@@ -424,8 +532,10 @@
     "collecte_le": "2026-10-28",
     "source": "Base OSV (failles connues)",
     "type_veille": "securite",
-    "etiquettes": null,
+    "etiquettes": [
+      "securite"
+    ],
     "fiabilite": 4,
-    "statut": null
+    "statut": "retenue"
   }
 ]

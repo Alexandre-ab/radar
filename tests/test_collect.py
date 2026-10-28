@@ -85,6 +85,14 @@ def entetes(valeurs=None):
     return message
 
 
+# Étiquettes de test (brique 4) : collect les pose sur chaque nouvelle fiche.
+ETIQUETTES = {
+    "claude-code": {"si": [{"titre_contient": ["claude code"]}]},
+    "securite": {"si": [{"types_veille": ["securite"]}]},
+    "cgu-ia": {"si": [{"sources": ["Anthropic · Usage Policy"]}]},
+}
+
+
 def source_releases(**modifs):
     source = {
         "type": "releases",
@@ -271,7 +279,7 @@ class TestValiderSource(unittest.TestCase):
     def test_type_veille_invalide(self):
         with self.assertRaises(radar.ErreurSource) as erreur:
             radar.valider_source(source_releases(type_veille="tech"), "depot")
-        self.assertIn("type_veille « tech » inconnu", str(erreur.exception))
+        self.assertIn("type_veille « tech » manquant ou inconnu", str(erreur.exception))
 
     def test_categorie_obligatoire_et_connue(self):
         for valeur in (None, "", "officiel", "Officielle", 3):
@@ -285,10 +293,16 @@ class TestValiderSource(unittest.TestCase):
             with self.subTest(valeur=valeur):
                 self.assertEqual(radar.valider_source(source_releases(categorie=valeur), "depot"), 10)
 
-    def test_type_veille_absent_autorise(self):
+    def test_type_veille_obligatoire(self):
+        # Changé à la passe 3 : type_veille est obligatoire (avant : absent autorisé),
+        # pour qu'aucune fiche ne garde un type_veille null.
         source = source_releases()
         del source["type_veille"]
-        self.assertEqual(radar.valider_source(source, "depot"), 10)
+        with mock.patch.object(radar, "gh_api") as faux_gh:
+            with self.assertRaises(radar.ErreurSource) as erreur:
+                radar.collecter_releases(source)
+            faux_gh.assert_not_called()
+        self.assertIn("type_veille « None » manquant ou inconnu", str(erreur.exception))
 
     def test_champ_requis_manquant_pour_chaque_type(self):
         cas = [(source_releases, "depot", radar.collecter_releases, "gh_api"),
@@ -623,7 +637,8 @@ class TestCommandeCollect(DossierTemporaire):
     """radar collect de bout en bout, dans un dossier temporaire, réseau simulé."""
 
     def ecrire_config(self, sources, mots_cles=("claude code",), ignorer=("crypto",)):
-        config = {"mots_cles": list(mots_cles), "ignorer": list(ignorer), "sources": sources}
+        config = {"mots_cles": list(mots_cles), "ignorer": list(ignorer), "sources": sources,
+                  "etiquettes": ETIQUETTES}
         self.config.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
 
     def collecter(self, releases=(), hackernews=None, osv=None, page=None):
@@ -698,7 +713,7 @@ class TestCommandeCollect(DossierTemporaire):
         self.ecrire_config([source_releases(type_veille="tech")])
         items, sortie = self.collecter([release("v1"), release("v2")])
         self.assertEqual(items, [])
-        self.assertIn("type_veille « tech » inconnu", sortie)
+        self.assertIn("type_veille « tech » manquant ou inconnu", sortie)
         self.faux_gh.assert_not_called()
 
     def test_type_veille_dans_items(self):
