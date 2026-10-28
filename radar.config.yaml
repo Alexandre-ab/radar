@@ -207,3 +207,73 @@ decision:
       notes:
         fichiers_md: { note: 5, chiffre: "Fichiers .md lisibles et versionnés dans git : aucun verrou", source: "https://github.com/Alexandre-ab/radar", date: "2026-10-28" }
         sqlite:      { note: 3, chiffre: "La base tient dans un fichier local, mais revenir aux .md demande un export à écrire ; module natif à recompiler (docs/compilation.md)", source: "https://github.com/WiseLibs/better-sqlite3/blob/master/docs/compilation.md", date: "2026-10-28" }
+
+# Brique 6 : les textes de rapport.md, écrits par NOUS, à partir des seules infos de
+# data/items.json. « radar report » refuse toute url de tendance absente de items.json.
+rapport:
+  option_recommandee: fichiers_md   # l'une des options de « decision »
+  etiquette_data: data              # l'étiquette qui marque la tendance sur la data
+
+  tendances:
+    - titre: "Les assistants de code en ligne de commande publient des versions à un rythme très rapide"
+      type_veille: technologique
+      infos:
+        - "https://github.com/anthropics/claude-code/releases/tag/v2.1.303"
+        - "https://github.com/anthropics/claude-code/releases/tag/v2.1.308"
+        - "https://github.com/anthropics/claude-code/releases/tag/v2.1.312"
+        - "https://github.com/openai/codex/releases/tag/rust-v0.164.0"
+        - "https://github.com/openai/codex/releases/tag/rust-v0.165.0"
+      constat: "Les 10 dernières versions de Claude Code relevées par radar ont été publiées en 10 jours, du 18 au 27 octobre 2026. Du 23 au 28 octobre, Codex CLI a publié 2 versions stables (0.164.0 le 23 octobre, 0.165.0 le 27 octobre) et 8 pré-versions."
+      impact: "Hivemind pilote ces outils en ligne de commande : leurs options et leurs sorties peuvent changer d'une version à l'autre, presque chaque jour."
+      anticipation: "Sur 12 mois, à ce rythme (environ une version par jour pour Claude Code), il faut figer les versions utilisées par Hivemind et tester chaque montée de version avant de l'adopter."
+      budget: "Compatible : suivre ces versions ne coûte rien, les dépôts sont publics et collectés par radar."
+      technique: "Compatible : un seul développeur est alerté par « radar collect », mais chaque montée de version demande un test."
+      statut: retenue
+      pourquoi: "Sources officielles (dépôts GitHub des éditeurs), fiabilité 6, faits datés et vérifiables."
+
+    - titre: "Le stockage local en SQLite est mûr, et la communauté le combine avec Markdown pour la mémoire des agents IA"
+      type_veille: technologique
+      infos:
+        - "https://github.com/WiseLibs/better-sqlite3/releases/tag/v12.10.0"
+        - "https://github.com/WiseLibs/better-sqlite3/releases/tag/v13.0.0"
+        - "https://github.com/WiseLibs/better-sqlite3/releases/tag/v13.0.3"
+        - "https://www.withnative.ai/research-and-posts/markdown-context-benchmark"
+        - "https://github.com/tordrt/LLMSchema"
+      constat: "better-sqlite3 a publié 10 versions en moins de 3 mois, de la v12.10.0 (12 mai 2026) à la v13.0.3 (5 août 2026), en passant par la v13.0.0 (21 juillet). Côté communauté, l'éditeur Native affirme, sur son propre banc d'essai, que des agents consomment 40 fois moins de tokens quand Markdown est rangé dans SQLite (présenté sur Hacker News le 27 octobre 2026), et LLMSchema exporte le schéma d'une base en Markdown compact pour les agents IA (présenté le 8 octobre 2026)."
+      impact: "La mémoire d'Hivemind en fichiers .md n'est pas menacée à court terme, mais SQLite devient une option crédible si la mémoire grossit et que la recherche dans les fichiers ralentit."
+      anticipation: "Sur 12 mois : suivre les retours d'expérience indépendants sur la mémoire des agents en SQLite, et garder des fichiers .md simples à importer dans une base."
+      budget: "Compatible : better-sqlite3 est sous licence MIT, 0 € d'abonnement."
+      technique: "Compatible avec un Hivemind local, mais better-sqlite3 exige Node.js 22 ou plus et un module natif ; une migration prendrait au moins un des 2 sprints du seul développeur (notre estimation, decision.md)."
+      statut: retenue
+      pourquoi: "Appuyée par une source officielle (10 versions de better-sqlite3 retenues, fiabilité 6) ; les 2 infos communautaires sont écartées (« Show HN », dont un banc d'essai d'éditeur) et servent seulement de signal."
+
+    - titre: "Les outils qui pilotent plusieurs agents de code depuis un même endroit se multiplient"
+      type_veille: concurrentielle
+      infos:
+        - "https://github.com/makecindy/cindy"
+        - "https://paradev.com"
+        - "https://github.com/chen-985211/cleancode"
+        - "https://github.com/wrg32786/aigent-os"
+      constat: "Les 26 et 27 octobre 2026, 4 projets présentés sur Hacker News proposent de piloter Claude Code ou Codex depuis un même outil : Cindy (agents interchangeables), Paradev (un espace de travail pour plusieurs agents), CleanCode (Claude Code et Codex sur un même canevas) et Aigent-OS (un « harness » pour Claude Code)."
+      impact: "Ces projets recoupent le rôle d'Hivemind, piloter des IA en ligne de commande : si l'un d'eux s'impose, il deviendra un concurrent direct ou une brique à réutiliser."
+      anticipation: "Sur 12 mois : repérer ceux qui gagnent des utilisateurs (étoiles, versions publiées) avant de s'en inspirer ou de s'en démarquer."
+      budget: "Compatible : les observer ne coûte rien ; Cindy se présente comme open source."
+      technique: "Sans effet aujourd'hui : aucune intégration n'est envisagée dans Hivemind."
+      statut: ecartee
+      pourquoi: "Une seule info retenue (Cindy, fiabilité 4) ; les 3 autres sont écartées (fiabilité 2 à 3 : deux « Show HN » et un site sans auteur identifié). Le signal est trop faible pour agir : on le garde sous surveillance."
+
+  a_surveiller:   # un texte, ou { texte, url } avec une url de data/items.json
+    - "Le rythme des versions de Claude Code et de Codex CLI, et les changements qui touchent leur pilotage en ligne de commande."
+    - "Les retours d'expérience indépendants sur la mémoire des agents en SQLite, au-delà des bancs d'essai d'éditeurs."
+    - "Les outils qui pilotent plusieurs agents (Cindy, Paradev…) : étoiles et versions publiées dans les prochains mois."
+    - { texte: "La politique d'usage d'Anthropic, suivie par radar : sa page annonce une nouvelle version en vigueur le 12 novembre 2026.", url: "https://www.anthropic.com/legal/aup#empreinte-effb4dccd621" }
+
+  recommandation: "Nous recommandons de garder la mémoire d'Hivemind en fichiers .md pour les 2 prochains sprints, et de ne passer à SQLite que si la recherche dans ces fichiers devient trop lente."
+  risques:
+    - "La recherche dans les fichiers .md ralentit à mesure que la mémoire grossit."
+    - "Tout repose sur un seul développeur (1 contributeur sur le dépôt de référence)."
+    - "Les assistants pilotés évoluent très vite (10 versions de Claude Code en 10 jours) : une nouvelle version peut casser leur pilotage."
+  plan_b: "Basculer vers SQLite (better-sqlite3, licence MIT) dès qu'un seuil que nous proposons est franchi : une recherche dans la mémoire qui dépasse 1 seconde, ou plus de 10 000 fichiers .md. Les fichiers .md restent la source et sont importés dans la base par un script : le retour arrière reste possible."
+  prochaine_etape:
+    action: "Mesurer le temps de recherche dans la mémoire .md actuelle d'Hivemind et valider avec le client le seuil de bascule vers SQLite."
+    date: "2026-11-04"

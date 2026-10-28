@@ -449,6 +449,16 @@ class TestRienEnDurDansRadarPy(unittest.TestCase):
         for critere in decision["criteres"].values():
             for note in critere["notes"].values():
                 interdites |= {note["chiffre"], note["source"]}
+        # Brique 6 : les textes et les urls de la rubrique rapport (pas « etiquette_data » : c'est
+        # un nom d'étiquette, comme ceux de la rubrique etiquettes, et « data » est aussi un dossier).
+        rapport = config["rapport"]
+        for tendance in rapport["tendances"]:
+            interdites |= {str(v) for cle, v in tendance.items() if cle not in ("infos", "type_veille", "statut")}
+            interdites |= set(tendance["infos"])
+        for point in rapport["a_surveiller"]:
+            interdites |= set(point.values()) if isinstance(point, dict) else {point}
+        interdites |= {rapport["recommandation"], rapport["plan_b"], rapport["prochaine_etape"]["action"]}
+        interdites |= set(rapport["risques"])
         interdites.discard("")
         self.assertTrue(interdites)  # la config a bien été lue
         lignes = Path(radar.__file__).read_text(encoding="utf-8").splitlines()

@@ -5,14 +5,20 @@
 
 ## Le projet
 
-- Objectif : <une phrase : ce que fait le projet, pour qui>
-- Stack : <ex. Node 22, Express, SQLite>
-- Lancer en local : `<ex. npm run dev>`
-- Tester : `<ex. npm test>`
+- Objectif : RADAR, un outil de veille en ligne de commande (collect, score, search, decide, report)
+  qui aide notre binôme à éclairer une décision technique pour le client Hivemind, avec des sources datées.
+- Stack : Python 3.9 (bibliothèque standard) + PyYAML ; GitHub via `gh api` ; plan de veille dans
+  `radar.config.yaml`, données dans `data/`, livrables `decision.md` et `rapport.md`.
+- Lancer en local : `./radar collect`, puis `./radar score`, `./radar search <mot>`, `./radar decide`,
+  `./radar report` (Windows : `.\radar …`).
+- Tester : `python3 -m unittest discover -s tests -v` (aucun appel réseau) ; revue : `./revue`.
 
 ## Conventions
 
-- <ex. JavaScript moderne, modules ES, pas de dépendance sans demander>
+- Python 3.9 + PyYAML, aucune autre dépendance sans demander.
+- Rien en dur dans `radar.py` : sources, mots-clés, règles, décision et rapport viennent de
+  `radar.config.yaml` (vérifié par `TestRienEnDurDansRadarPy`).
+- Aucun lien inventé : chaque url d'un livrable vient de `data/items.json` ou de la rubrique `decision`.
 - Commits courts, en français, un sujet par commit.
 - Jamais de secret dans le code ni dans les commits (.env, clés API, tokens).
 

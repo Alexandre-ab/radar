@@ -14,6 +14,8 @@ Usage (depuis le dossier radar) :
             (« search <mot> --retenues » : seulement les retenues).
 « decide »  compare les 2 options de la rubrique decision (chiffres bruts via gh api)
             et écrit decision.md.
+« report »  écrit rapport.md (synthèse de veille + note de recommandation) d'après la
+            rubrique rapport (« report --verifier-liens » ouvre chaque lien avant).
 
 Les sources et les mots-clés viennent UNIQUEMENT de radar.config.yaml.
 """
@@ -38,6 +40,7 @@ FICHIER_CONFIG = DOSSIER / "radar.config.yaml"
 FICHIER_ITEMS = DOSSIER / "data" / "items.json"
 FICHIER_PAGES = DOSSIER / "data" / "pages.json"  # empreintes des pages suivies (type: page)
 FICHIER_DECISION = DOSSIER / "decision.md"      # écrit par « radar decide »
+FICHIER_RAPPORT = DOSSIER / "rapport.md"        # écrit par « radar report »
 
 # Adresses des API publiques utilisées par les collecteurs (le « comment » ;
 # le « quoi » — requêtes, paquets, pages — vient de radar.config.yaml).
@@ -75,6 +78,14 @@ NOTES_POSSIBLES = (1, 5)
 CHAMPS_IMPACT = (("perimetre", "Périmètre"), ("budget", "Budget"), ("delais", "Délais"),
                  ("anticipation", "Anticipation"))
 PAR_PAGE_GH, PAGES_GH_MAX = 100, 50  # listes gh api : 100 par page, au plus 50 pages
+# Le schéma de la rubrique rapport (prompt 5 et partie 6 du kit) : 3 tendances, chacune
+# appuyée par plusieurs infos datées, et les rubriques à remplir pour chacune.
+NOMBRE_TENDANCES = 3
+INFOS_PAR_TENDANCE_MIN = 2
+CHAMPS_TENDANCE = (("constat", "Ce que montrent les infos"), ("impact", "Impact attendu"),
+                   ("anticipation", "Ce qu'elle permet d'anticiper"), ("budget", "Compatibilité budget"),
+                   ("technique", "Compatibilité technique"))
+IMPACT_RAPPORT = ("perimetre", "budget", "delais")  # page 2, point 4 du kit
 
 
 class ErreurSource(Exception):
@@ -999,6 +1010,36 @@ def lignes_chiffres(decision, chiffres):
     return lignes
 
 
+def lignes_options(decision):
+    """Le tableau des 2 options et de leur dépôt (decision.md et rapport.md)."""
+    lignes = ["| | Option | Dépôt GitHub |", "|---|---|---|"]
+    for numero, option in enumerate(decision["options"].values(), 1):
+        lignes.append(f"| {numero} | {cellule(option['nom'])} | "
+                      f"{lien(option['depot'], PAGE_GITHUB.format(depot=option['depot']))} |")
+    return lignes
+
+
+def titre_matrice():
+    return (f"Matrice de décision (poids {POIDS_POSSIBLES[0]} à {POIDS_POSSIBLES[1]}, "
+            f"notes {NOTES_POSSIBLES[0]} à {NOTES_POSSIBLES[1]})")
+
+
+def lignes_matrice(decision, resultats, gagnant):
+    """La matrice pondérée, son total et sa conclusion (decision.md et rapport.md)."""
+    options, criteres = decision["options"], decision["criteres"]
+    lignes = ["| Critère | Poids | " + " | ".join(cellule(o["nom"]) for o in options.values()) + " |",
+              "|---|---|" + "---|" * len(options)]
+    for nom, critere in criteres.items():
+        notes = [f"{critere['notes'][ident]['note']} / {NOTES_POSSIBLES[1]} → "
+                 f"{critere['poids'] * critere['notes'][ident]['note']}" for ident in options]
+        eliminatoire = f" (éliminatoire si ≤ {critere['note_eliminatoire']})" if "note_eliminatoire" in critere else ""
+        lignes.append(f"| {cellule(libelle_critere(nom, critere))}{eliminatoire} | {critere['poids']} | "
+                      + " | ".join(notes) + " |")
+    lignes.append(f"| **Total pondéré** | **{sum(c['poids'] for c in criteres.values())}** | "
+                  + " | ".join(f"**{total_lisible(resultats[ident])}**" for ident in options) + " |")
+    return lignes + [""] + [f"**{ligne}**" for ligne in conclusion(decision, resultats, gagnant)]
+
+
 def rediger_decision(decision, infos, chiffres, resultats, gagnant, ref):
     """Le contenu de decision.md."""
     options, criteres = decision["options"], decision["criteres"]
@@ -1012,11 +1053,7 @@ def rediger_decision(decision, infos, chiffres, resultats, gagnant, ref):
         md += [decision["contexte"], ""]
     md += ["Besoins du client (ils fixent nos poids) :", ""] + [f"- {besoin}" for besoin in decision["besoins"]] + [""]
 
-    md += ["## 2. Les options comparées", "", "| | Option | Dépôt GitHub |", "|---|---|---|"]
-    for numero, (ident, option) in enumerate(options.items(), 1):
-        md.append(f"| {numero} | {cellule(option['nom'])} | "
-                 f"{lien(option['depot'], PAGE_GITHUB.format(depot=option['depot']))} |")
-    md.append("")
+    md += ["## 2. Les options comparées", ""] + lignes_options(decision) + [""]
 
     retenues = sum(item["statut"] == "retenue" for item in infos)
     md += ["## 3. Ce que dit la veille", "",
@@ -1034,19 +1071,7 @@ def rediger_decision(decision, infos, chiffres, resultats, gagnant, ref):
 
     md += [f"## 4. Chiffres bruts (gh api, relevés le {ref})", ""] + lignes_chiffres(decision, chiffres) + [""]
 
-    md += [f"## 5. Matrice de décision (poids {POIDS_POSSIBLES[0]} à {POIDS_POSSIBLES[1]}, "
-          f"notes {NOTES_POSSIBLES[0]} à {NOTES_POSSIBLES[1]})", "",
-          "| Critère | Poids | " + " | ".join(cellule(o["nom"]) for o in options.values()) + " |",
-          "|---|---|" + "---|" * len(options)]
-    for nom, critere in criteres.items():
-        notes = [f"{critere['notes'][ident]['note']} / {NOTES_POSSIBLES[1]} → "
-                 f"{critere['poids'] * critere['notes'][ident]['note']}" for ident in options]
-        eliminatoire = f" (éliminatoire si ≤ {critere['note_eliminatoire']})" if "note_eliminatoire" in critere else ""
-        md.append(f"| {cellule(libelle_critere(nom, critere))}{eliminatoire} | {critere['poids']} | "
-                 + " | ".join(notes) + " |")
-    md.append(f"| **Total pondéré** | **{sum(c['poids'] for c in criteres.values())}** | "
-             + " | ".join(f"**{total_lisible(resultats[ident])}**" for ident in options) + " |")
-    md += [""] + [f"**{ligne}**" for ligne in conclusion(decision, resultats, gagnant)] + [""]
+    md += [f"## 5. {titre_matrice()}", ""] + lignes_matrice(decision, resultats, gagnant) + [""]
 
     md += ["### Justification de chaque note", ""]
     for nom, critere in criteres.items():
@@ -1065,6 +1090,230 @@ def rediger_decision(decision, infos, chiffres, resultats, gagnant, ref):
         md += [f"- **{titre}** : {impact.get(cle) or '_à remplir_'}" for cle, titre in CHAMPS_IMPACT]
         md.append("")
     return "\n".join(md)
+
+
+# --- Rapport (brique 6) ------------------------------------------------------
+# Tous les textes (tendances, recommandation, risques, prochaine étape) sont dans la
+# rubrique « rapport » de la config. Règle d'or : chaque url citée vient de
+# data/items.json ou de la rubrique decision ; aucune autre n'est acceptée.
+
+def une_seule_phrase(texte):
+    """Vrai si le texte ne contient pas de fin de phrase suivie d'une autre phrase."""
+    return "\n" not in texte.strip() and not re.search(r"[.!?…]\s+\S", texte.strip())
+
+
+def erreurs_tendance(numero, tendance, par_url):
+    prefixe = f"tendances › n°{numero}"
+    if not isinstance(tendance, dict):
+        return [f"{prefixe} : doit contenir titre, infos, statut, pourquoi…"]
+    erreurs = []
+    if not est_texte(tendance.get("titre")):
+        erreurs.append(f"{prefixe} : « titre » doit être un texte")
+    if "type_veille" in tendance and tendance["type_veille"] not in TYPES_VEILLE:
+        erreurs.append(f"{prefixe} : type_veille « {tendance['type_veille']} » inconnu")
+    infos = tendance.get("infos")
+    if not isinstance(infos, list) or len(infos) < INFOS_PAR_TENDANCE_MIN:
+        erreurs.append(f"{prefixe} : « infos » doit citer au moins {INFOS_PAR_TENDANCE_MIN} urls de data/items.json "
+                       "(une tendance = plusieurs infos datées)")
+    else:
+        erreurs += [f"{prefixe} : url absente de data/items.json (source inventée ?) : {url}"
+                    for url in infos if url not in par_url]
+        if len(set(map(str, infos))) != len(infos):
+            erreurs.append(f"{prefixe} : une même url est citée deux fois")
+    erreurs += [f"{prefixe} : « {cle} » doit être un texte" for cle, _ in CHAMPS_TENDANCE if not est_texte(tendance.get(cle))]
+    if tendance.get("statut") not in STATUTS:
+        erreurs.append(f"{prefixe} : « statut » doit être {' ou '.join(STATUTS)}")
+    if not est_texte(tendance.get("pourquoi")):
+        erreurs.append(f"{prefixe} : « pourquoi » doit expliquer le statut")
+    return erreurs
+
+
+def a_surveiller_de(rapport):
+    """Chaque point « à surveiller » est un texte, ou {texte, url} avec une url de data/items.json."""
+    return [p if isinstance(p, dict) else {"texte": p} for p in rapport.get("a_surveiller") or []]
+
+
+def lire_rapport(config, decision, items):
+    """Valide la rubrique rapport ; toutes les erreurs sont listées d'un coup."""
+    rapport = config.get("rapport")
+    quoi = "le rapport ne peut pas être écrit."
+    if not isinstance(rapport, dict):
+        arreter(quoi, ["la rubrique « rapport » est absente"])
+    par_url = {item["url"]: item for item in items}
+    erreurs = []
+    if rapport.get("option_recommandee") not in decision["options"]:
+        erreurs.append(f"« option_recommandee » doit être l'une des options de decision : "
+                       f"{', '.join(decision['options'])}")
+    else:
+        impact = decision["options"][rapport["option_recommandee"]].get("impact") or {}
+        erreurs += [f"l'option recommandée n'a pas d'impact « {cle} » dans decision › options"
+                    for cle in IMPACT_RAPPORT if not est_texte(impact.get(cle))]
+    etiquette_data = rapport.get("etiquette_data")
+    if etiquette_data not in (config.get("etiquettes") or {}):
+        erreurs.append("« etiquette_data » doit être l'une des étiquettes de la config (celle de la data)")
+
+    tendances = rapport.get("tendances")
+    if not isinstance(tendances, list) or len(tendances) != NOMBRE_TENDANCES:
+        erreurs.append(f"« tendances » doit contenir exactement {NOMBRE_TENDANCES} tendances")
+        tendances = tendances if isinstance(tendances, list) else []
+    for numero, tendance in enumerate(tendances, 1):
+        erreurs += erreurs_tendance(numero, tendance, par_url)
+    sur_la_data = [t for t in tendances if isinstance(t, dict) and isinstance(t.get("infos"), list) and t["infos"]
+                   and all(etiquette_data in (par_url.get(url, {}).get("etiquettes") or []) for url in t["infos"])]
+    if tendances and not sur_la_data:
+        erreurs.append(f"aucune tendance sur la data : au moins une tendance doit citer uniquement des infos "
+                       f"portant l'étiquette « {etiquette_data} »")
+
+    points = rapport.get("a_surveiller")
+    if not isinstance(points, list) or not points:
+        erreurs.append("« a_surveiller » doit lister ce qu'il faut continuer à surveiller")
+    else:
+        for numero, point in enumerate(a_surveiller_de(rapport), 1):
+            if not est_texte(point.get("texte")):
+                erreurs.append(f"a_surveiller › n°{numero} : doit être un texte, ou {{texte, url}}")
+            if "url" in point and point["url"] not in par_url:
+                erreurs.append(f"a_surveiller › n°{numero} : url absente de data/items.json : {point['url']}")
+    if not est_texte(rapport.get("recommandation")) or not une_seule_phrase(rapport["recommandation"]):
+        erreurs.append("« recommandation » doit tenir en UNE phrase")
+    if not liste_de_textes(rapport.get("risques")):
+        erreurs.append("« risques » doit lister les risques")
+    if not est_texte(rapport.get("plan_b")):
+        erreurs.append("« plan_b » doit être un texte")
+    etape = rapport.get("prochaine_etape")
+    if not isinstance(etape, dict) or not est_texte(etape.get("action")):
+        erreurs.append("« prochaine_etape » doit contenir « action » et « date »")
+    elif not est_date_iso(etape.get("date")) or date.fromisoformat(etape["date"]) < aujourdhui():
+        erreurs.append('« prochaine_etape › date » : une date AAAA-MM-JJ entre guillemets, à partir d\'aujourd\'hui')
+    if erreurs:
+        arreter(quoi, erreurs)
+    return rapport
+
+
+def urls_autorisees(decision, items):
+    """Les seules urls qu'un rapport peut citer : celles de data/items.json et de la décision."""
+    urls = {item["url"] for item in items}
+    urls |= {PAGE_GITHUB.format(depot=option["depot"]) for option in decision["options"].values()}
+    urls |= {note["source"] for critere in decision["criteres"].values() for note in critere["notes"].values()}
+    return urls
+
+
+LIEN_OU_URL = re.compile(r"\]\((?P<lien>https?://[^)\s]+)\)|(?P<brute>https?://[^\s\[\]<>\"]+)")
+PONCTUATION_FINALE = ".,;:!?…»\"'"
+
+
+def nettoyer_url_brute(url):
+    """Retire la ponctuation collée à la fin d'une url écrite en texte brut :
+    « https://a.org/x). » → « https://a.org/x » ; une parenthèse équilibrée est gardée."""
+    while url:
+        if url[-1] in PONCTUATION_FINALE:
+            url = url[:-1]
+        elif url[-1] == ")" and url.count(")") > url.count("("):
+            url = url[:-1]
+        else:
+            break
+    return url
+
+
+def urls_citees(texte):
+    """Toutes les urls du texte, dans l'ordre : celles des liens [titre](url), et celles
+    écrites en texte brut (recommandation, risques, tendances…)."""
+    urls = []
+    for trouvee in LIEN_OU_URL.finditer(texte):
+        url = trouvee.group("lien") or nettoyer_url_brute(trouvee.group("brute"))
+        if re.fullmatch(r"https?://\S+", url):
+            urls.append(url)
+    return urls
+
+
+def ligne_info(item):
+    return (f"- {item['publie_le']} · {lien(item['titre'], item['url'])} · {item['source']} · "
+            f"fiabilité {item['fiabilite']} ({item['statut']})")
+
+
+def lignes_sources(config, items, seuil):
+    """Page 1, point 1 : les sources qui ont au moins une info retenue, avec leurs dates."""
+    retenues = [item for item in items if item["statut"] == "retenue"]
+    lignes = ["| Source | Catégorie | Type de veille | Infos retenues | Publiées entre | Info retenue la plus récente |",
+              "|---|---|---|---|---|---|"]
+    vues = []
+    for source in config.get("sources") or []:
+        nom = source.get("nom")
+        des_retenues = [item for item in retenues if item["source"] == nom]
+        if nom in vues or not des_retenues:
+            continue
+        vues.append(nom)
+        recente = max(des_retenues, key=lambda item: (item["publie_le"], item["fiabilite"]))
+        dates = sorted(item["publie_le"] for item in des_retenues)
+        lignes.append(f"| {cellule(nom)} | {source.get('categorie')} | {source.get('type_veille')} | "
+                      f"{len(des_retenues)} | {dates[0]} et {dates[-1]} | {lien(recente['titre'], recente['url'])} |")
+    lignes += ["", f"{len(retenues)} infos retenues sur {len(items)} collectées "
+                   f"(fiabilité au moins égale au seuil de {seuil}, calculée par « radar score »)."]
+    return lignes
+
+
+def rediger_rapport(config, decision, rapport, items, resultats, gagnant, ref):
+    """Le contenu de rapport.md : page 1 synthèse de veille, page 2 note de recommandation."""
+    par_url = {item["url"]: item for item in items}
+    etiquette_data = rapport["etiquette_data"]
+    md = [f"# Rapport de veille · {decision['question']}", "",
+          f"_Écrit par « radar report » le {ref} à partir de {FICHIER_CONFIG.name} (rubriques « rapport » et "
+          f"« decision ») et de {FICHIER_ITEMS.relative_to(DOSSIER)}. Chaque lien vient de "
+          f"{FICHIER_ITEMS.name} ou de la décision ; détail des notes et de leurs sources dans "
+          f"{FICHIER_DECISION.name}._", "",
+          "## Page 1 · Synthèse de veille", "",
+          "### 1. Nos sources retenues", ""] + lignes_sources(config, items, config.get("seuil")) + [""]
+
+    md += [f"### 2. Les {NOMBRE_TENDANCES} tendances", ""]
+    for numero, tendance in enumerate(rapport["tendances"], 1):
+        infos = [par_url[url] for url in tendance["infos"]]
+        data = all(etiquette_data in item["etiquettes"] for item in infos)
+        nature = ", ".join(([tendance["type_veille"]] if tendance.get("type_veille") else [])
+                           + ([f"tendance « {etiquette_data} »"] if data else []))
+        md += [f"#### Tendance {numero} · {tendance['titre']}" + (f" ({nature})" if nature else ""), "",
+               f"**{CHAMPS_TENDANCE[0][1]}** : {tendance['constat']}", "",
+               f"{len(infos)} infos datées qui vont dans ce sens :", ""]
+        md += [ligne_info(item) for item in sorted(infos, key=lambda item: item["publie_le"])] + [""]
+        md += [f"- **{titre}** : {tendance[cle]}" for cle, titre in CHAMPS_TENDANCE[1:]]
+        md += [f"- **{'Retenue' if tendance['statut'] == 'retenue' else 'Écartée'}**, "
+               f"pourquoi : {tendance['pourquoi']}", ""]
+
+    md += ["### 3. Ce qu'il faut continuer à surveiller", ""]
+    for point in a_surveiller_de(rapport):
+        source = f" ({lien(par_url[point['url']]['titre'], point['url'])})" if point.get("url") else ""
+        md.append(f"- {point['texte']}{source}")
+    md += ["", '<div style="page-break-after: always;"></div>', ""]
+
+    option = decision["options"][rapport["option_recommandee"]]
+    md += ["## Page 2 · Note de recommandation", "",
+           "### 1. La question et le contexte", "", decision["question"], ""]
+    if decision.get("contexte"):
+        md += [decision["contexte"], ""]
+    md += ["Besoins du client : " + " ; ".join(decision["besoins"]) + ".", "",
+           "### 2. Les options et la matrice", ""] + lignes_options(decision) + [""]
+    md += [f"{titre_matrice()} :", ""] + lignes_matrice(decision, resultats, gagnant) + [""]
+    md += [f"Chaque note est justifiée par un chiffre réel, sa source et sa date dans {FICHIER_DECISION.name}.", "",
+           "### 3. La recommandation", "", f"> **{rapport['recommandation']}**", "",
+           "### 4. L'impact", "", f"Option retenue : {option['nom']}.", ""]
+    titres = dict(CHAMPS_IMPACT)
+    md += [f"- **{titres[cle]}** : {option['impact'][cle]}" for cle in IMPACT_RAPPORT] + [""]
+    md += ["### 5. Les risques et le plan B", ""] + [f"- {risque}" for risque in rapport["risques"]]
+    md += ["", f"**Plan B** : {rapport['plan_b']}", "",
+           "### 6. La prochaine étape", "",
+           f"**Le {rapport['prochaine_etape']['date']}** : {rapport['prochaine_etape']['action']}", ""]
+    return "\n".join(md)
+
+
+def verifier_liens(urls):
+    """Ouvre chaque url (sans son #fragment) ; renvoie la liste des (url, erreur)."""
+    pannes = []
+    for url in sorted(set(urls)):
+        try:
+            http(urllib.parse.urldefrag(url).url)
+            print(f"   ✅ {url}")
+        except ErreurSource as e:
+            print(f"   ❌ {url} : {e}")
+            pannes.append((url, str(e)))
+    return pannes
 
 
 # --- Commandes --------------------------------------------------------------
@@ -1246,6 +1495,41 @@ def commande_decide(args):
     print(f"✅ {FICHIER_DECISION.name} écrit")
 
 
+def commande_report(args):
+    config = charger_config()
+    decision = lire_decision(config)
+    items = charger_items()
+    rapport = lire_rapport(config, decision, items)
+    if any(item["statut"] is None for item in items):
+        sys.exit("❌ Des infos n'ont pas encore de statut : lancez d'abord « radar score ».")
+    resultats = evaluer_options(decision)
+    gagnant = meilleure_option(resultats)
+    texte = rediger_rapport(config, decision, rapport, items, resultats, gagnant, aujourdhui())
+
+    # Règle d'or : aucune url hors de data/items.json et de la décision.
+    citees = urls_citees(texte)
+    inventees = sorted(set(citees) - urls_autorisees(decision, items))
+    if inventees:
+        arreter("le rapport cite des urls qui ne viennent ni de data/items.json ni de la décision.", inventees)
+    if args.verifier_liens:
+        print(f"🌐 Vérification en direct des {len(set(citees))} liens cités…")
+        pannes = verifier_liens(citees)
+        if pannes:
+            arreter("des liens du rapport ne répondent pas : rapport non écrit.",
+                    [f"{url} : {erreur}" for url, erreur in pannes])
+    FICHIER_RAPPORT.write_text(texte, encoding="utf-8")
+
+    print(f"📝 {decision['question']}")
+    for numero, tendance in enumerate(rapport["tendances"], 1):
+        print(f"   Tendance {numero} ({tendance['statut']}) : {tendance['titre']}")
+    print(f"   Recommandation : {rapport['recommandation']}")
+    if rapport["option_recommandee"] != gagnant:
+        print("⚠️  L'option recommandée n'est pas la mieux notée de la matrice : justifiez-le à l'oral.")
+    print(f"   Prochaine étape le {rapport['prochaine_etape']['date']} : {rapport['prochaine_etape']['action']}")
+    print(f"✅ {FICHIER_RAPPORT.name} écrit : 2 pages, {len(set(citees))} liens, tous issus de "
+          f"{FICHIER_ITEMS.name} ou de la décision" + (", tous vérifiés en direct" if args.verifier_liens else ""))
+
+
 def entier_positif(texte):
     try:
         valeur = int(texte)
@@ -1266,6 +1550,9 @@ def main():
     search.add_argument("mot", nargs="+", help="le ou les mots à chercher dans les titres et les étiquettes")
     search.add_argument("--retenues", action="store_true", help="seulement les infos retenues")
     commandes.add_parser("decide", help="compare les 2 options de la rubrique decision et écrit decision.md")
+    report = commandes.add_parser("report", help="écrit rapport.md (2 pages) d'après la rubrique rapport")
+    report.add_argument("--verifier-liens", action="store_true",
+                        help="ouvre chaque lien cité avant d'écrire le rapport (réseau nécessaire)")
 
     args = parser.parse_args()
     if args.commande == "collect":
@@ -1276,6 +1563,8 @@ def main():
         commande_search(args)
     elif args.commande == "decide":
         commande_decide(args)
+    elif args.commande == "report":
+        commande_report(args)
 
 
 if __name__ == "__main__":
