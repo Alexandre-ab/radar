@@ -1,0 +1,15 @@
+# Plan de veille RADAR : tout ce que l'outil surveille est écrit ici, nulle part ailleurs.
+axes:      [cli-ia, securite, cgu-ia]          # 3 à 5 thèmes, au moins 3 types de veille
+mots_cles: ["claude code", "codex", "MCP"]     # ce qui déclenche une capture
+ignorer:   ["crypto", "NFT"]                   # ce qu'on décide de ne PAS surveiller
+sources:                                        # au moins 5, de 3 types différents
+  # nom     = ce qui s'affiche dans le champ « source » de la fiche
+  # produit = début du titre de la fiche (« Claude Code v2.1.312 »)
+  # limite  = nombre de versions récupérées à chaque collecte
+  - { type: releases, depot: anthropics/claude-code, nom: "Dépôt GitHub officiel", produit: "Claude Code", limite: 10, type_veille: technologique }
+  - { type: releases, depot: openai/codex, nom: "Dépôt GitHub officiel", produit: "Codex CLI", limite: 10, type_veille: technologique }
+  - { type: hackernews, requete: "claude code", type_veille: technologique }
+  - { type: failles, paquet: express, ecosysteme: npm, type_veille: securite }
+  - { type: page, url: "<url des CGU d'un éditeur d'IA>", type_veille: reglementaire }
+frequence: { failles: quotidien, tendances: hebdo }
+livrable:  "top 10 du lundi + alerte si faille"
